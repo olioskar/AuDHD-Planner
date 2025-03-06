@@ -78,7 +78,8 @@ h1 {
     outline: none; /* Remove focus outline for cleaner look */
 }
 
-.planner-section h2:focus {
+.planner-section h2[contenteditable="true"] {
+    cursor: text;
     background: rgba(74, 144, 226, 0.1);
     border-radius: 4px;
     padding: 2px 4px;
@@ -129,13 +130,25 @@ h1 {
     border-radius: 6px;
 }
 
-.draggable-item [contenteditable="true"] {
+.draggable-item span:not(.checkbox) {
     flex: 1;
     outline: none;
-    min-width: 50px;
+    min-width: 100px;
+    cursor: grab;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    padding: 4px;
 }
 
-.draggable-item [contenteditable="true"]:focus {
+.draggable-item span:not(.checkbox):empty::before,
+.draggable-item span:not(.checkbox)[data-placeholder] {
+    content: attr(data-placeholder);
+    color: #95a5a6;
+    font-style: italic;
+}
+
+.draggable-item span[contenteditable="true"] {
+    cursor: text;
     background: rgba(74, 144, 226, 0.1);
     border-radius: 4px;
     padding: 2px 4px;

@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Save item content
                 Array.from(list.children).forEach(item => {
                     const itemId = item.dataset.id;
-                    const itemContent = item.querySelector('[contenteditable="true"]').textContent;
+                    const itemContent = item.querySelector('span:not(.checkbox)').textContent;
                     content[`item_${itemId}`] = itemContent;
                 });
             }
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const itemId = item.dataset.id;
                         const itemContent = content[`item_${itemId}`];
                         if (itemContent) {
-                            item.querySelector('[contenteditable="true"]').textContent = itemContent;
+                            item.querySelector('span:not(.checkbox)').textContent = itemContent;
                         }
                     });
                 }
@@ -544,21 +544,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add event listeners for content changes
-    document.querySelectorAll('[contenteditable="true"]').forEach(element => {
-        element.addEventListener('blur', saveOrder);
-        element.addEventListener('keydown', e => {
+    // Add double-click handlers for editing
+    function makeEditable(element) {
+        element.setAttribute('contenteditable', 'true');
+        element.focus();
+        
+        // Save the current text to restore if editing is cancelled
+        const originalText = element.textContent;
+        
+        function handleBlur() {
+            element.removeAttribute('contenteditable');
+            if (element.textContent.trim() === '') {
+                element.textContent = '';
+            }
+            saveOrder();
+            element.removeEventListener('blur', handleBlur);
+            element.removeEventListener('keydown', handleKeyDown);
+        }
+        
+        function handleKeyDown(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 element.blur();
+            } else if (e.key === 'Escape') {
+                element.textContent = originalText;
+                element.blur();
             }
+        }
+        
+        element.addEventListener('blur', handleBlur);
+        element.addEventListener('keydown', handleKeyDown);
+    }
+
+    // Add double-click listeners to section headers
+    document.querySelectorAll('.planner-section h2').forEach(header => {
+        header.addEventListener('dblclick', (e) => {
+            // Prevent starting drag operation
+            header.setAttribute('draggable', 'false');
+            makeEditable(header);
+        });
+        
+        // Restore draggable when editing ends
+        header.addEventListener('blur', () => {
+            setTimeout(() => {
+                header.setAttribute('draggable', 'true');
+            }, 0);
         });
     });
 
-    // Add event listener for writing space changes
-    document.querySelectorAll('.writing-space').forEach(element => {
-        element.addEventListener('input', saveOrder);
-        element.addEventListener('blur', saveOrder);
+    // Add double-click listeners to list items
+    document.querySelectorAll('.draggable-item').forEach(item => {
+        const textSpan = item.querySelector('span:not(.checkbox)');
+        if (textSpan) {
+            item.addEventListener('dblclick', (e) => {
+                // Only make editable if clicking the text span
+                if (e.target === textSpan) {
+                    // Prevent starting drag operation
+                    item.setAttribute('draggable', 'false');
+                    makeEditable(textSpan);
+                }
+            });
+            
+            // Restore draggable when editing ends
+            textSpan.addEventListener('blur', () => {
+                setTimeout(() => {
+                    item.setAttribute('draggable', 'true');
+                }, 0);
+            });
+        }
     });
 
     // Load saved order and content when the page loads
