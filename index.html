@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuDHD Kids Planner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>My Daily Planner</h1>
+    </header>
+    
+    <main class="planner-container">
+        <div class="column">
+            <section class="planner-section" data-section="morning">
+                <h2>🕰️ Morning Routine</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="wake-up"><span class="checkbox"></span>☀️ Wake Up</li>
+                    <li draggable="true" class="draggable-item" data-id="brush-teeth"><span class="checkbox"></span>🦷 Brush Teeth</li>
+                    <li draggable="true" class="draggable-item" data-id="breakfast"><span class="checkbox"></span>🥗 Eat Breakfast</li>
+                    <li draggable="true" class="draggable-item" data-id="get-dressed"><span class="checkbox"></span>👕 Get Dressed</li>
+                    <li draggable="true" class="draggable-item" data-id="pack-bag"><span class="checkbox"></span>🎒 Pack Bag</li>
+                    <li draggable="true" class="draggable-item" data-id="go-to-school"><span class="checkbox"></span>🏫 Go to School</li>
+                </ul>
+            </section>
+
+            <section class="planner-section" data-section="something-else">
+                <h2>💡 Something Else</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="blank-1"><span class="checkbox"></span></li>
+                    <li draggable="true" class="draggable-item" data-id="blank-2"><span class="checkbox"></span></li>
+                    <li draggable="true" class="draggable-item" data-id="blank-3"><span class="checkbox"></span></li>
+                    <li draggable="true" class="draggable-item" data-id="blank-4"><span class="checkbox"></span></li>
+                </ul>
+            </section>
+        </div>
+
+        <div class="column">
+            <section class="planner-section" data-section="homework">
+                <h2>📖 Homework & Chores</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="math"><span class="checkbox"></span>➗ Math</li>
+                    <li draggable="true" class="draggable-item" data-id="reading"><span class="checkbox"></span>📖 Reading</li>
+                    <li draggable="true" class="draggable-item" data-id="writing"><span class="checkbox"></span>✏️ Writing</li>
+                    <li draggable="true" class="draggable-item" data-id="science"><span class="checkbox"></span>🔬 Science</li>
+                    <li draggable="true" class="draggable-item" data-id="clean-room"><span class="checkbox"></span>🧹 Clean Room</li>
+                    <li draggable="true" class="draggable-item" data-id="feed-pet"><span class="checkbox"></span>🐶 Feed Pet</li>
+                    <li draggable="true" class="draggable-item" data-id="set-table"><span class="checkbox"></span>🍽️ Set Table</li>
+                    <li draggable="true" class="draggable-item" data-id="take-trash"><span class="checkbox"></span>🗑️ Take Out Trash</li>
+                </ul>
+            </section>
+
+            <section class="planner-section" data-section="sensory">
+                <h2>🌀 Sensory Needs</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="quiet-time"><span class="checkbox"></span>🎧 I needed quiet time</li>
+                    <li draggable="true" class="draggable-item" data-id="movement"><span class="checkbox"></span>🏃 I needed movement</li>
+                    <li draggable="true" class="draggable-item" data-id="deep-pressure"><span class="checkbox"></span>🤗 I needed deep pressure</li>
+                    <li draggable="true" class="draggable-item" data-id="fidget-tools"><span class="checkbox"></span>🖐️ I needed fidget tools</li>
+                </ul>
+            </section>
+        </div>
+
+        <div class="column">
+            <section class="planner-section" data-section="feelings">
+                <h2>😊 How Did I Feel Today?</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="happy"><span class="checkbox"></span>😀 Happy</li>
+                    <li draggable="true" class="draggable-item" data-id="sad"><span class="checkbox"></span>😢 Sad</li>
+                    <li draggable="true" class="draggable-item" data-id="excited"><span class="checkbox"></span>🤩 Excited</li>
+                    <li draggable="true" class="draggable-item" data-id="angry"><span class="checkbox"></span>😡 Angry</li>
+                    <li draggable="true" class="draggable-item" data-id="overwhelmed"><span class="checkbox"></span>😵‍💫 Overwhelmed</li>
+                </ul>
+            </section>
+
+            <section class="planner-section" data-section="winding-down">
+                <h2>🌙 Winding Down</h2>
+                <ul class="sortable-list">
+                    <li draggable="true" class="draggable-item" data-id="bath"><span class="checkbox"></span>🛁 Take a bath or shower</li>
+                    <li draggable="true" class="draggable-item" data-id="brush-teeth-night"><span class="checkbox"></span>🦷 Brush Teeth</li>
+                    <li draggable="true" class="draggable-item" data-id="read-book"><span class="checkbox"></span>📖 Read a book or listen to a story</li>
+                    <li draggable="true" class="draggable-item" data-id="relax"><span class="checkbox"></span>💤 Relax and get ready for sleep</li>
+                    <li draggable="true" class="draggable-item" data-id="go-to-bed"><span class="checkbox"></span>🛏️ Go to bed</li>
+                </ul>
+            </section>
+
+            <section class="planner-section" data-section="happy-moment">
+                <h2>❤️ Happy Moment</h2>
+                <div class="writing-space"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html> 
