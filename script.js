@@ -416,19 +416,115 @@ document.addEventListener('DOMContentLoaded', () => {
         saveOrder();
     }
 
-    // Save the current order to localStorage
+    // Save the current order and content to localStorage
     function saveOrder() {
         const order = {};
-        sortableLists.forEach(list => {
-            const section = list.closest('.planner-section').dataset.section;
-            order[section] = Array.from(list.children).map(item => item.dataset.id);
+        const content = {};
+        const columnOrder = {};
+        
+        // Save column and section order
+        document.querySelectorAll('.column').forEach((column, columnIndex) => {
+            columnOrder[`column_${columnIndex}`] = Array.from(column.children)
+                .filter(child => child.classList.contains('planner-section'))
+                .map(section => section.dataset.section);
         });
+        
+        // Save section titles and items
+        document.querySelectorAll('.planner-section').forEach(section => {
+            const sectionId = section.dataset.section;
+            
+            // Save section title
+            const title = section.querySelector('h2').textContent;
+            content[`title_${sectionId}`] = title;
+            
+            // Save items
+            const list = section.querySelector('.sortable-list');
+            if (list) {
+                order[sectionId] = Array.from(list.children).map(item => item.dataset.id);
+                
+                // Save item content
+                Array.from(list.children).forEach(item => {
+                    const itemId = item.dataset.id;
+                    const itemContent = item.querySelector('[contenteditable="true"]').textContent;
+                    content[`item_${itemId}`] = itemContent;
+                });
+            }
+            
+            // Save writing space content if it exists
+            const writingSpace = section.querySelector('.writing-space');
+            if (writingSpace) {
+                content[`writing_${sectionId}`] = writingSpace.value;
+            }
+        });
+        
         localStorage.setItem('plannerOrder', JSON.stringify(order));
+        localStorage.setItem('plannerContent', JSON.stringify(content));
+        localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
     }
 
-    // Load the saved order from localStorage
+    // Load the saved order and content from localStorage
     function loadOrder() {
         const savedOrder = localStorage.getItem('plannerOrder');
+        const savedContent = localStorage.getItem('plannerContent');
+        const savedColumnOrder = localStorage.getItem('columnOrder');
+        
+        // First restore content
+        if (savedContent) {
+            const content = JSON.parse(savedContent);
+            
+            // Restore section titles and item content
+            document.querySelectorAll('.planner-section').forEach(section => {
+                const sectionId = section.dataset.section;
+                
+                // Restore section title
+                const title = content[`title_${sectionId}`];
+                if (title) {
+                    section.querySelector('h2').textContent = title;
+                }
+                
+                // Restore item content
+                const list = section.querySelector('.sortable-list');
+                if (list) {
+                    Array.from(list.children).forEach(item => {
+                        const itemId = item.dataset.id;
+                        const itemContent = content[`item_${itemId}`];
+                        if (itemContent) {
+                            item.querySelector('[contenteditable="true"]').textContent = itemContent;
+                        }
+                    });
+                }
+                
+                // Restore writing space content if it exists
+                const writingSpace = section.querySelector('.writing-space');
+                if (writingSpace) {
+                    const writingContent = content[`writing_${sectionId}`];
+                    if (writingContent) {
+                        writingSpace.value = writingContent;
+                    }
+                }
+            });
+        }
+        
+        // Then restore section order within columns
+        if (savedColumnOrder) {
+            const columnOrder = JSON.parse(savedColumnOrder);
+            const columns = document.querySelectorAll('.column');
+            
+            Object.entries(columnOrder).forEach(([columnKey, sectionIds]) => {
+                const columnIndex = parseInt(columnKey.split('_')[1]);
+                const column = columns[columnIndex];
+                if (column) {
+                    sectionIds.forEach(sectionId => {
+                        const section = document.querySelector(`[data-section="${sectionId}"]`);
+                        if (section) {
+                            column.appendChild(section);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Finally restore item order within sections
         if (savedOrder) {
             const order = JSON.parse(savedOrder);
             Object.entries(order).forEach(([section, itemIds]) => {
@@ -448,6 +544,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Load saved order when the page loads
+    // Add event listeners for content changes
+    document.querySelectorAll('[contenteditable="true"]').forEach(element => {
+        element.addEventListener('blur', saveOrder);
+        element.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                element.blur();
+            }
+        });
+    });
+
+    // Add event listener for writing space changes
+    document.querySelectorAll('.writing-space').forEach(element => {
+        element.addEventListener('input', saveOrder);
+        element.addEventListener('blur', saveOrder);
+    });
+
+    // Load saved order and content when the page loads
     loadOrder();
 }); 
