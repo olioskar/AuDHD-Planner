@@ -76,8 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
         section.classList.remove('dragging-section');
         document.body.classList.remove('dragging');
         document.body.classList.remove('dragging-section');
+        
+        // Remove drag-over class from all sections
         document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
+        
+        // Remove placeholder
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) placeholder.remove();
     }
@@ -94,15 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const section = this.closest('.planner-section');
         if (!section) return;
 
-        // Remove drag-over class from all sections except the current one
-        document.querySelectorAll('.planner-section').forEach(s => {
-            if (s !== section) s.classList.remove('drag-over-section');
-        });
-
-        // Add drag-over class to current section if not dragging
-        if (!section.classList.contains('dragging-section')) {
-            section.classList.add('drag-over-section');
-        }
+        // Remove all drag-over classes first
+        document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
 
         // Create or update placeholder
         let placeholder = document.querySelector('.section-placeholder');
@@ -114,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = section.getBoundingClientRect();
         const position = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
         
+        // Only show placeholder, don't add drag-over class to sections
         if (position === 'before') {
             section.parentNode.insertBefore(placeholder, section);
         } else {
@@ -160,8 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = e.dataTransfer.getData('type');
         if (type !== 'section') return;
 
-        // Remove drag-over class from all columns
+        // Remove drag-over class from all columns and sections
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
+        document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
         
         // Add drag-over class to current column
         this.classList.add('drag-over-section');
