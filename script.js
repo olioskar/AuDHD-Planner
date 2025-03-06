@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Section drag handlers - completely separate from item handlers
     function handleSectionDragStart(e) {
+        // If we're dragging an item, don't allow section dragging
+        if (document.body.classList.contains('dragging')) {
+            e.preventDefault();
+            return;
+        }
         const section = this.closest('.planner-section');
         section.classList.add('dragging-section');
         document.body.classList.add('dragging');
@@ -58,6 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleSectionDragOver(e) {
+        // If we're dragging an item, don't show section drag feedback
+        if (document.body.classList.contains('dragging') && !document.body.classList.contains('dragging-section')) {
+            return;
+        }
+
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         
@@ -119,6 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleColumnDragOver(e) {
+        // If we're dragging an item, don't show section drag feedback
+        if (document.body.classList.contains('dragging') && !document.body.classList.contains('dragging-section')) {
+            return;
+        }
+
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         
