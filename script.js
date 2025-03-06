@@ -49,6 +49,26 @@ document.addEventListener('DOMContentLoaded', () => {
         e.dataTransfer.setData('text/plain', section.dataset.section);
         e.dataTransfer.setData('type', 'section');
         e.dataTransfer.effectAllowed = 'move';
+        
+        // Create a ghost image of the entire section
+        const ghost = section.cloneNode(true);
+        ghost.style.width = `${section.offsetWidth}px`;
+        ghost.style.height = `${section.offsetHeight}px`;
+        ghost.style.position = 'absolute';
+        ghost.style.top = '-1000px';
+        ghost.style.left = '-1000px';
+        document.body.appendChild(ghost);
+        
+        // Calculate the offset based on where the user clicked
+        const rect = section.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+        
+        // Set the drag image with the correct offset
+        e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
+        
+        // Remove the ghost after a short delay
+        setTimeout(() => ghost.remove(), 0);
     }
 
     function handleSectionDragEnd(e) {
