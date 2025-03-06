@@ -28,13 +28,27 @@ h1 {
 /* Main container styles */
 .planner-container {
     width: 297mm; /* A4 width */
-    height: 210mm; /* A4 height */
+    min-height: 210mm; /* Minimum A4 height */
     margin: 0 auto;
     display: flex;
     gap: 10px;
     padding: 15px;
     background: white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Add A4 guide overlay */
+.planner-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 210mm; /* A4 height */
+    border-bottom: 2px dashed #4a90e2;
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 /* Column styles */
@@ -44,6 +58,7 @@ h1 {
     flex-direction: column;
     gap: 15px;
     min-width: 0; /* Prevents flex items from overflowing */
+    min-height: 210mm; /* Minimum A4 height */
 }
 
 /* Section styles */
@@ -52,12 +67,41 @@ h1 {
     border-radius: 10px;
     padding: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .planner-section h2 {
     font-size: 1.4em;
     margin-bottom: 12px;
     color: #2c3e50;
+    cursor: grab;
+}
+
+/* Section dragging styles - completely separate from item dragging */
+.planner-section.dragging-section {
+    opacity: 0.8;
+    background: #e3f2fd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+}
+
+.planner-section.drag-over-section {
+    border: 2px dashed #4a90e2;
+}
+
+/* Section placeholder styles */
+.section-placeholder {
+    border: 2px dashed #4a90e2;
+    background-color: rgba(74, 144, 226, 0.1);
+    min-height: 80px;
+    height: auto;
+    margin: 10px 0;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.column.drag-over-section {
+    background-color: rgba(74, 144, 226, 0.1);
 }
 
 /* List styles */
@@ -136,6 +180,15 @@ body.dragging .draggable-item:hover {
     .planner-container {
         box-shadow: none;
         padding: 10px;
+        min-height: auto;
+    }
+
+    .planner-container::after {
+        display: none;
+    }
+
+    .column {
+        min-height: auto;
     }
 
     .planner-section {
@@ -164,11 +217,11 @@ body.dragging .draggable-item:hover {
 @media screen and (max-width: 297mm) {
     .planner-container {
         width: 100%;
-        height: auto;
-        flex-direction: column;
+        min-height: auto;
     }
 
     .column {
         width: 100%;
+        min-height: auto;
     }
 } 
