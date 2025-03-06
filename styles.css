@@ -91,17 +91,16 @@ h1 {
 
 /* Section placeholder styles */
 .section-placeholder {
-    border: 2px dashed #4a90e2;
-    background-color: rgba(74, 144, 226, 0.1);
+    border: none;
+    background-color: transparent;
     min-height: 80px;
     height: auto;
     margin: 10px 0;
-    border-radius: 8px;
     flex-shrink: 0;
 }
 
 .column.drag-over-section {
-    background-color: rgba(74, 144, 226, 0.1);
+    background-color: transparent;
 }
 
 /* List styles */
@@ -144,9 +143,8 @@ body.dragging .draggable-item:hover {
 /* Drag placeholder styles */
 .drag-placeholder {
     height: 44px; /* Height of draggable-item (including margin) */
-    background: #e3f2fd;
-    border: 2px dashed #4a90e2;
-    border-radius: 6px;
+    background: transparent;
+    border: none;
     margin-bottom: 8px;
 }
 
