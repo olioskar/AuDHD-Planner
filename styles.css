@@ -31,6 +31,11 @@ body {
     font-weight: 500;
 }
 
+.action-buttons {
+    display: flex;
+    gap: 15px;
+}
+
 .action-button {
     font-size: 1em;
     font-style: italic;
@@ -54,6 +59,13 @@ body {
     background: white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     position: relative;
+    transition: width 0.3s ease, min-height 0.3s ease;
+}
+
+/* Portrait mode styles */
+.planner-container.portrait {
+    width: 210mm; /* A4 height */
+    min-height: 297mm; /* A4 width */
 }
 
 /* Add A4 guide overlay */
@@ -67,6 +79,11 @@ body {
     border-bottom: 2px dashed #4a90e2;
     pointer-events: none;
     opacity: 0.5;
+    transition: height 0.3s ease;
+}
+
+.planner-container.portrait::after {
+    height: 297mm; /* A4 width */
 }
 
 /* Column styles */
@@ -77,6 +94,10 @@ body {
     gap: 15px;
     min-width: 0; /* Prevents flex items from overflowing */
     min-height: 210mm; /* Minimum A4 height */
+}
+
+.planner-container.portrait .column {
+    min-height: auto; /* Allow columns to grow with content in portrait */
 }
 
 /* Section styles */
@@ -239,12 +260,21 @@ body.dragging .draggable-item:hover {
 }
 
 /* Print styles */
-@page {
-    size: A4 landscape;
-    margin: 5mm;
-}
-
 @media print {
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
+    }
+
+    @page portrait {
+        size: A4 portrait;
+        margin: 5mm;
+    }
+
+    body.portrait-mode {
+        page: portrait;
+    }
+
     .app-header {
         display: none;
     }
@@ -306,7 +336,7 @@ body.dragging .draggable-item:hover {
 
 /* Responsive adjustments */
 @media screen and (max-width: 297mm) {
-    .planner-container {
+    .planner-container, .planner-container.portrait {
         width: 100%;
         min-height: auto;
     }

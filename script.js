@@ -618,10 +618,34 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOrder();
 
     // Reset functionality
-    document.querySelector('.action-button').addEventListener('click', () => {
+    document.querySelector('.action-button:not(.orientation-toggle)').addEventListener('click', () => {
         if (confirm('Are you sure you want to reset everything? This will remove all changes you have made.')) {
             localStorage.clear();
             window.location.reload();
         }
     });
+
+    // Orientation toggle functionality
+    const orientationToggle = document.querySelector('.orientation-toggle');
+    const plannerContainer = document.querySelector('.planner-container');
+    let isLandscape = true;
+
+    orientationToggle.addEventListener('click', () => {
+        isLandscape = !isLandscape;
+        plannerContainer.classList.toggle('portrait', !isLandscape);
+        document.body.classList.toggle('portrait-mode', !isLandscape);
+        orientationToggle.textContent = isLandscape ? 'Landscape' : 'Portrait';
+        
+        // Save only the orientation preference
+        localStorage.setItem('orientation', isLandscape ? 'landscape' : 'portrait');
+    });
+
+    // Load saved orientation preference
+    const savedOrientation = localStorage.getItem('orientation');
+    if (savedOrientation === 'portrait') {
+        isLandscape = false;
+        plannerContainer.classList.add('portrait');
+        document.body.classList.add('portrait-mode');
+        orientationToggle.textContent = 'Portrait';
+    }
 }); 
