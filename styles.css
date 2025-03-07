@@ -83,7 +83,7 @@ body {
 .planner-section {
     background: #f8f9fa;
     border-radius: 10px;
-    padding: 15px;
+    padding: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -217,7 +217,7 @@ body.dragging .draggable-item:hover {
     height: 100px;
     border: 2px dashed #4a90e2;
     border-radius: 8px;
-    margin-top: 10px;
+    margin-top: 0; /* Remove margin-top since section header already has margin-bottom */
     background: #fff;
     width: 100%;
     padding: 10px;
@@ -241,6 +241,7 @@ body.dragging .draggable-item:hover {
 /* Print styles */
 @page {
     size: A4 landscape;
+    margin: 5mm;
 }
 
 @media print {
@@ -270,13 +271,18 @@ body.dragging .draggable-item:hover {
     }
 
     .planner-section {
-        break-inside: avoid;
         box-shadow: none;
+    }
+
+    .planner-section:has(.writing-space) {
+        break-inside: avoid;
+        page-break-inside: avoid; /* For older browsers */
     }
 
     .writing-space {
         border: 1px solid #4a90e2;
-        min-height: 100px; /* Ensure consistent height when printing */
+        min-height: 100px;
+        break-inside: avoid;
     }
 
     /* Only hide the placeholder text */
@@ -286,6 +292,7 @@ body.dragging .draggable-item:hover {
 
     .draggable-item {
         cursor: default;
+        page-break-inside: auto; /* Explicitly allow items to break across pages */
     }
 
     .draggable-item:hover {
