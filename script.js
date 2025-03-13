@@ -405,8 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Remove drag-over class from all items
-        draggableItems.forEach(item => item.classList.remove('drag-over'));
+        // Remove drag-over class from all items in the document
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
         
         // Remove placeholder
         const placeholder = document.querySelector('.drag-placeholder');
@@ -416,85 +418,85 @@ document.addEventListener('DOMContentLoaded', () => {
         saveOrder();
     }
 
-    // Save the current order and content to localStorage
-    function saveOrder() {
-        const order = {};
-        const content = {};
-        const columnOrder = {};
-        
-        // Save column and section order
-        document.querySelectorAll('.column').forEach((column, columnIndex) => {
-            columnOrder[`column_${columnIndex}`] = Array.from(column.children)
-                .filter(child => child.classList.contains('planner-section'))
-                .map(section => section.dataset.section);
-        });
-        
-        // Save section titles and items
-        document.querySelectorAll('.planner-section').forEach(section => {
-            const sectionId = section.dataset.section;
-            
-            // Save section title
-            const title = section.querySelector('h2').textContent;
-            content[`title_${sectionId}`] = title;
-            
-            // Save items
-            const list = section.querySelector('.sortable-list');
-            if (list) {
-                order[sectionId] = Array.from(list.children).map(item => item.dataset.id);
-                
-                // Save item content
-                Array.from(list.children).forEach(item => {
-                    const itemId = item.dataset.id;
-                    const itemContent = item.querySelector('span:not(.checkbox)').textContent;
-                    content[`item_${itemId}`] = itemContent;
-                });
-            }
-            
-            // Save writing space content if it exists
-            const writingSpace = section.querySelector('.writing-space');
-            if (writingSpace) {
-                content[`writing_${sectionId}`] = writingSpace.value;
-            }
-        });
-        
-        localStorage.setItem('plannerOrder', JSON.stringify(order));
-        localStorage.setItem('plannerContent', JSON.stringify(content));
-        localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
-    }
-
     // Load the saved order and content from localStorage
     function loadOrder() {
         const savedOrder = localStorage.getItem('plannerOrder');
         const savedContent = localStorage.getItem('plannerContent');
         const savedColumnOrder = localStorage.getItem('columnOrder');
         
-        // First restore content
-        if (savedContent) {
+        if (!savedOrder || !savedContent) return; // Don't proceed if no saved data
+        
+        try {
+            const order = JSON.parse(savedOrder);
             const content = JSON.parse(savedContent);
+            const columnOrder = savedColumnOrder ? JSON.parse(savedColumnOrder) : null;
             
-            // Restore section titles and item content
+            // First restore content and create any missing items
             document.querySelectorAll('.planner-section').forEach(section => {
                 const sectionId = section.dataset.section;
+                const list = section.querySelector('.sortable-list');
+                if (!list) return; // Skip sections without lists
                 
-                // Restore section title
+                // Clear existing items
+                list.innerHTML = '';
+                
+                // Get the order for this section
+                const itemIds = order[sectionId] || [];
+                
+                // Restore or create items in the correct order
+                itemIds.forEach(itemId => {
+                    const itemContent = content[`item_${itemId}`];
+                    if (itemContent !== undefined) { // Check if we have content for this item
+                        // Create new item
+                        const li = document.createElement('li');
+                        li.className = 'draggable-item';
+                        li.draggable = true;
+                        li.dataset.id = itemId;
+                        
+                        // Create checkbox
+                        const checkbox = document.createElement('span');
+                        checkbox.className = 'checkbox';
+                        
+                        // Create text span
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = itemContent;
+                        
+                        // Add drag event listeners
+                        li.addEventListener('dragstart', handleItemDragStart);
+                        li.addEventListener('dragend', handleItemDragEnd);
+                        li.addEventListener('dragover', handleItemDragOver);
+                        li.addEventListener('drop', handleItemDrop);
+                        
+                        // Add double-click listener for editing
+                        li.addEventListener('dblclick', (e) => {
+                            if (e.target === textSpan) {
+                                li.setAttribute('draggable', 'false');
+                                makeEditable(textSpan);
+                            }
+                        });
+                        
+                        // Add blur listener to restore draggable
+                        textSpan.addEventListener('blur', () => {
+                            setTimeout(() => {
+                                li.setAttribute('draggable', 'true');
+                                saveOrder();
+                            }, 0);
+                        });
+                        
+                        // Assemble and add the item
+                        li.appendChild(checkbox);
+                        li.appendChild(textSpan);
+                        list.appendChild(li);
+                    }
+                });
+                
+                // Restore section title if exists
                 const title = content[`title_${sectionId}`];
                 if (title) {
                     section.querySelector('h2').textContent = title;
                 }
                 
-                // Restore item content
-                const list = section.querySelector('.sortable-list');
-                if (list) {
-                    Array.from(list.children).forEach(item => {
-                        const itemId = item.dataset.id;
-                        const itemContent = content[`item_${itemId}`];
-                        if (itemContent) {
-                            item.querySelector('span:not(.checkbox)').textContent = itemContent;
-                        }
-                    });
-                }
-                
-                // Restore writing space content if it exists
+                // Restore writing space content if exists
                 const writingSpace = section.querySelector('.writing-space');
                 if (writingSpace) {
                     const writingContent = content[`writing_${sectionId}`];
@@ -503,44 +505,88 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-        }
-        
-        // Then restore section order within columns
-        if (savedColumnOrder) {
-            const columnOrder = JSON.parse(savedColumnOrder);
-            const columns = document.querySelectorAll('.column');
             
-            Object.entries(columnOrder).forEach(([columnKey, sectionIds]) => {
-                const columnIndex = parseInt(columnKey.split('_')[1]);
-                const column = columns[columnIndex];
-                if (column) {
-                    sectionIds.forEach(sectionId => {
-                        const section = document.querySelector(`[data-section="${sectionId}"]`);
-                        if (section) {
-                            column.appendChild(section);
-                        }
-                    });
-                }
-            });
-        }
-        
-        // Finally restore item order within sections
-        if (savedOrder) {
-            const order = JSON.parse(savedOrder);
-            Object.entries(order).forEach(([section, itemIds]) => {
-                const sectionElement = document.querySelector(`[data-section="${section}"]`);
-                if (sectionElement) {
-                    const list = sectionElement.querySelector('.sortable-list');
-                    if (list) {
-                        itemIds.forEach(id => {
-                            const item = document.querySelector(`[data-id="${id}"]`);
-                            if (item) {
-                                list.appendChild(item);
+            // Then restore section order within columns if available
+            if (columnOrder) {
+                const columns = document.querySelectorAll('.column');
+                
+                Object.entries(columnOrder).forEach(([columnKey, sectionIds]) => {
+                    const columnIndex = parseInt(columnKey.split('_')[1]);
+                    const column = columns[columnIndex];
+                    if (column) {
+                        sectionIds.forEach(sectionId => {
+                            const section = document.querySelector(`[data-section="${sectionId}"]`);
+                            if (section) {
+                                column.appendChild(section);
                             }
                         });
                     }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading saved data:', error);
+            // If there's an error loading the data, clear it to prevent future errors
+            localStorage.removeItem('plannerOrder');
+            localStorage.removeItem('plannerContent');
+            localStorage.removeItem('columnOrder');
+        }
+    }
+
+    // Save the current order and content to localStorage
+    function saveOrder() {
+        try {
+            const order = {};
+            const content = {};
+            const columnOrder = {};
+            
+            // Save column and section order
+            document.querySelectorAll('.column').forEach((column, columnIndex) => {
+                columnOrder[`column_${columnIndex}`] = Array.from(column.children)
+                    .filter(child => child.classList.contains('planner-section'))
+                    .map(section => section.dataset.section);
+            });
+            
+            // Save section titles and items
+            document.querySelectorAll('.planner-section').forEach(section => {
+                const sectionId = section.dataset.section;
+                
+                // Save section title
+                const title = section.querySelector('h2').textContent;
+                content[`title_${sectionId}`] = title;
+                
+                // Save items
+                const list = section.querySelector('.sortable-list');
+                if (list) {
+                    // Get all items, including newly added ones
+                    const items = Array.from(list.children)
+                        .filter(item => item.classList.contains('draggable-item'));
+                    
+                    // Save the order
+                    order[sectionId] = items.map(item => item.dataset.id);
+                    
+                    // Save item content
+                    items.forEach(item => {
+                        const itemId = item.dataset.id;
+                        const textSpan = item.querySelector('span:not(.checkbox)');
+                        if (textSpan) {
+                            content[`item_${itemId}`] = textSpan.textContent;
+                        }
+                    });
+                }
+                
+                // Save writing space content if it exists
+                const writingSpace = section.querySelector('.writing-space');
+                if (writingSpace) {
+                    content[`writing_${sectionId}`] = writingSpace.value;
                 }
             });
+            
+            // Save to localStorage
+            localStorage.setItem('plannerOrder', JSON.stringify(order));
+            localStorage.setItem('plannerContent', JSON.stringify(content));
+            localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
+        } catch (error) {
+            console.error('Error saving data:', error);
         }
     }
 
@@ -557,6 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (element.textContent.trim() === '') {
                 element.textContent = '';
             }
+            // Save order after content is updated
             saveOrder();
             element.removeEventListener('blur', handleBlur);
             element.removeEventListener('keydown', handleKeyDown);
@@ -612,6 +659,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 0);
             });
         }
+    });
+
+    // Add new item functionality
+    document.querySelectorAll('.add-item-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const section = button.closest('.planner-section');
+            const list = section.querySelector('.sortable-list');
+            const newId = `item-${Date.now()}`; // Create unique ID
+            
+            // Create new item
+            const li = document.createElement('li');
+            li.className = 'draggable-item';
+            li.draggable = true;
+            li.dataset.id = newId;
+            
+            // Create checkbox
+            const checkbox = document.createElement('span');
+            checkbox.className = 'checkbox';
+            
+            // Create text span
+            const textSpan = document.createElement('span');
+            textSpan.textContent = ''; // Empty by default
+            
+            // Add drag event listeners
+            li.addEventListener('dragstart', handleItemDragStart);
+            li.addEventListener('dragend', handleItemDragEnd);
+            li.addEventListener('dragover', handleItemDragOver);
+            li.addEventListener('drop', handleItemDrop);
+            
+            // Add double-click listener for editing
+            li.addEventListener('dblclick', (e) => {
+                if (e.target === textSpan) {
+                    li.setAttribute('draggable', 'false');
+                    makeEditable(textSpan);
+                }
+            });
+            
+            // Add blur listener to restore draggable
+            textSpan.addEventListener('blur', () => {
+                setTimeout(() => {
+                    li.setAttribute('draggable', 'true');
+                    // Save order after the text content has been updated
+                    saveOrder();
+                }, 0);
+            });
+            
+            // Assemble and add the new item
+            li.appendChild(checkbox);
+            li.appendChild(textSpan);
+            list.appendChild(li);
+            
+            // Save order immediately after adding the new item
+            saveOrder();
+            
+            // Focus and make editable immediately
+            makeEditable(textSpan);
+        });
     });
 
     // Load saved order and content when the page loads

@@ -109,13 +109,43 @@ body {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.planner-section h2 {
-    font-size: 1em;
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
+}
+
+.section-header h2 {
+    font-size: 1em;
     color: #2c3e50;
     cursor: grab;
     font-weight: bold;
-    outline: none; /* Remove focus outline for cleaner look */
+    outline: none;
+    margin: 0; /* Reset margin since it's handled by section-header */
+}
+
+.add-item-button {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #4a90e2;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    border: none;
+    padding: 0;
+    opacity: 0.7;
+}
+
+.add-item-button:hover {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .planner-section h2[contenteditable="true"] {
@@ -123,7 +153,7 @@ body {
     background: rgba(74, 144, 226, 0.1);
     border-radius: 4px;
     padding: 2px 4px;
-    margin: -2px -4px 10px -4px;
+    margin: -2px -4px;
 }
 
 /* Section dragging styles - completely separate from item dragging */
@@ -168,6 +198,7 @@ body {
     background: white;
     padding: 6px;
     border-radius: 6px;
+    transition: background-color 0.2s ease;
 }
 
 .draggable-item span:not(.checkbox) {
@@ -196,7 +227,8 @@ body {
 }
 
 /* Prevent hover effects during dragging */
-body.dragging .draggable-item:hover {
+body.dragging .draggable-item:hover,
+body.dragging .draggable-item.drag-over {
     background: white;
 }
 
@@ -210,7 +242,13 @@ body.dragging .draggable-item:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Remove the dashed border from draggable items */
 .draggable-item.drag-over {
+    background: #e3f2fd;
+}
+
+/* Keep the dashed border only for sections */
+.planner-section.drag-over-section {
     border: 2px dashed #4a90e2;
 }
 
