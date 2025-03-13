@@ -346,6 +346,13 @@ body.dragging .draggable-item.drag-over {
         display: none;
     }
 
+    /* Hide action buttons when printing */
+    .add-item-button,
+    .remove-section-button,
+    .section-actions {
+        display: none;
+    }
+
     body {
         padding: 0;
         background: none;
@@ -377,7 +384,7 @@ body.dragging .draggable-item.drag-over {
     }
 
     .writing-space {
-        border: 1px solid #4a90e2;
+        border: none;
         min-height: 100px;
         break-inside: avoid;
     }
