@@ -49,6 +49,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Save current state to localStorage
         save() {
+            // Ensure all non-text sections have remove buttons before saving
+            document.querySelectorAll('.planner-section').forEach(section => {
+                if (!section.querySelector('textarea')) {  // If not a text section
+                    const actions = section.querySelector('.section-actions');
+                    if (actions && !actions.querySelector('.remove-section-button')) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-section-button';
+                        removeBtn.title = 'Remove section';
+                        removeBtn.textContent = '−';
+                        removeBtn.addEventListener('click', () => removeSection(section));
+                        actions.appendChild(removeBtn);
+                    }
+                }
+            });
+            
             const currentState = this.getCurrentState();
             localStorage.setItem('plannerData', JSON.stringify(currentState));
             console.log('Saved planner data:', currentState);
@@ -310,6 +325,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Function to remove a section
+    function removeSection(section) {
+        if (confirm('Are you sure you want to remove this section and all its items?')) {
+            // Remove the section from the DOM
+            section.remove();
+            
+            // Save changes to localStorage
+            PlannerData.save();
+        }
+    }
+
     // Item dragging setup
     const draggableItems = document.querySelectorAll('.draggable-item');
     const sortableLists = document.querySelectorAll('.sortable-list');
@@ -317,6 +343,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Section dragging setup - completely separate
     const draggableHeaders = document.querySelectorAll('.planner-section h2[draggable="true"]');
     const columns = document.querySelectorAll('.column');
+
+    // Ensure all non-text sections have remove buttons initially
+    document.querySelectorAll('.planner-section').forEach(section => {
+        if (!section.querySelector('textarea')) {  // If not a text section
+            const actions = section.querySelector('.section-actions');
+            if (actions && !actions.querySelector('.remove-section-button')) {
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-section-button';
+                removeBtn.title = 'Remove section';
+                removeBtn.textContent = '−';
+                removeBtn.addEventListener('click', () => removeSection(section));
+                actions.appendChild(removeBtn);
+            }
+        }
+    });
 
     // Add drag event listeners to all draggable items
     draggableItems.forEach(item => {
@@ -854,17 +895,6 @@ document.addEventListener('DOMContentLoaded', () => {
         makeEditable(section.querySelector('h2'));
     });
 
-    // Update section removal logic
-    function removeSection(section) {
-        if (confirm('Are you sure you want to remove this section and all its items?')) {
-            // Remove the section from the DOM
-            section.remove();
-            
-            // Save changes to localStorage
-            PlannerData.save();
-        }
-    }
-    
     // Reset functionality
     document.querySelector('.action-button.reset-button').addEventListener('click', () => {
         if (confirm('Are you sure you want to reset everything? This will remove all changes you have made.')) {
