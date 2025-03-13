@@ -114,6 +114,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+    padding: 0 5px;
 }
 
 .section-header h2 {
@@ -122,17 +123,25 @@ body {
     cursor: grab;
     font-weight: bold;
     outline: none;
-    margin: 0; /* Reset margin since it's handled by section-header */
+    margin: 0;
+    flex: 1;
 }
 
-.add-item-button {
+.section-actions {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.add-item-button,
+.remove-section-button {
     width: 20px;
     height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: #4a90e2;
     color: white;
     cursor: pointer;
     font-size: 16px;
@@ -141,9 +150,19 @@ body {
     border: none;
     padding: 0;
     opacity: 0.7;
+    flex-shrink: 0;
 }
 
-.add-item-button:hover {
+.add-item-button {
+    background: #4a90e2;
+}
+
+.remove-section-button {
+    background: #e74c3c;
+}
+
+.add-item-button:hover,
+.remove-section-button:hover {
     opacity: 1;
     transform: scale(1.1);
 }

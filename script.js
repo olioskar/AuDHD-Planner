@@ -1,4 +1,315 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Define a clear data model for planner state management
+    const PlannerData = {
+        // Get current state from DOM
+        getCurrentState() {
+            const sections = {};
+            document.querySelectorAll('.planner-section').forEach(section => {
+                const sectionId = section.dataset.section;
+                const items = [];
+                
+                section.querySelectorAll('.draggable-item').forEach(item => {
+                    items.push({
+                        id: item.dataset.id,
+                        text: item.querySelector('span:nth-child(2)').textContent,
+                        checked: item.querySelector('.checkbox').classList.contains('checked')
+                    });
+                });
+                
+                const title = section.querySelector('h2').textContent;
+                const isTextSection = section.querySelector('textarea') !== null;
+                let textContent = '';
+                if (isTextSection) {
+                    textContent = section.querySelector('textarea')?.value || '';
+                }
+                
+                const columnElement = section.closest('.column');
+                const columnIndex = Array.from(document.querySelectorAll('.column')).indexOf(columnElement);
+                
+                sections[sectionId] = {
+                    title,
+                    items,
+                    isTextSection,
+                    textContent,
+                    columnIndex
+                };
+            });
+            
+            // Get column layout information
+            const columnsOrder = Array.from(document.querySelectorAll('.column')).map(col => 
+                Array.from(col.querySelectorAll('.planner-section')).map(s => s.dataset.section)
+            );
+            
+            return {
+                sections,
+                columnsOrder,
+                orientation: document.body.classList.contains('landscape') ? 'landscape' : 'portrait'
+            };
+        },
+        
+        // Save current state to localStorage
+        save() {
+            const currentState = this.getCurrentState();
+            localStorage.setItem('plannerData', JSON.stringify(currentState));
+            console.log('Saved planner data:', currentState);
+        },
+        
+        // Load state from localStorage or return null if none exists
+        load() {
+            const saved = localStorage.getItem('plannerData');
+            return saved ? JSON.parse(saved) : null;
+        },
+        
+        // Apply saved state to DOM
+        applyState(state) {
+            if (!state) return false;
+            
+            console.log('Applying state:', state);
+            
+            // Apply orientation
+            if (state.orientation === 'landscape') {
+                document.body.classList.remove('portrait-mode');
+                document.querySelector('.orientation-toggle').textContent = 'Landscape';
+            } else {
+                document.body.classList.add('portrait-mode');
+                document.querySelector('.orientation-toggle').textContent = 'Portrait';
+            }
+            
+            // Clear existing sections
+            document.querySelectorAll('.column').forEach(column => {
+                // Remove only planner sections, not other elements
+                Array.from(column.children)
+                    .filter(child => child.classList.contains('planner-section'))
+                    .forEach(section => section.remove());
+            });
+            
+            // Recreate sections in proper column order
+            state.columnsOrder.forEach((sectionIds, columnIndex) => {
+                const column = document.querySelectorAll('.column')[columnIndex];
+                if (!column) return;
+                
+                sectionIds.forEach(sectionId => {
+                    if (!state.sections[sectionId]) return;
+                    
+                    const sectionData = state.sections[sectionId];
+                    const section = this.createSection(sectionId, sectionData);
+                    
+                    // Add event listeners for the new section
+                    this.setupSectionEventListeners(section);
+                    
+                    column.appendChild(section);
+                });
+            });
+            
+            return true;
+        },
+        
+        // Create a new section element with all its items
+        createSection(sectionId, sectionData) {
+            const section = document.createElement('section');
+            section.className = 'planner-section';
+            section.dataset.section = sectionId;
+            
+            if (sectionData.isTextSection) {
+                // Create text-type section (like "Happy Moment")
+                section.innerHTML = `
+                    <h2 draggable="true">${sectionData.title}</h2>
+                    <textarea class="writing-space" placeholder="Write here...">${sectionData.textContent || ''}</textarea>
+                `;
+            } else {
+                // Create list-type section (standard task list)
+                section.innerHTML = `
+                    <div class="section-header">
+                        <h2 draggable="true">${sectionData.title}</h2>
+                        <div class="section-actions">
+                            <button class="add-item-button" title="Add new item">+</button>
+                            <button class="remove-section-button" title="Remove section">−</button>
+                        </div>
+                    </div>
+                    <ul class="sortable-list"></ul>
+                `;
+                
+                // Add all items to the list
+                const list = section.querySelector('.sortable-list');
+                if (sectionData.items && sectionData.items.length > 0) {
+                    sectionData.items.forEach(item => {
+                        const li = this.createItem(item);
+                        list.appendChild(li);
+                    });
+                }
+            }
+            
+            return section;
+        },
+        
+        // Create a new item element
+        createItem(itemData) {
+            const li = document.createElement('li');
+            li.className = 'draggable-item';
+            li.draggable = true;
+            li.dataset.id = itemData.id;
+            
+            const checkbox = document.createElement('span');
+            checkbox.className = 'checkbox';
+            if (itemData.checked) {
+                checkbox.classList.add('checked');
+            }
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = itemData.text;
+            
+            li.appendChild(checkbox);
+            li.appendChild(textSpan);
+            
+            return li;
+        },
+        
+        // Set up all event listeners for a section
+        setupSectionEventListeners(section) {
+            // Set up event listeners for section header
+            const header = section.querySelector('h2');
+            if (header) {
+                header.addEventListener('dragstart', handleSectionDragStart);
+                header.addEventListener('dragend', handleSectionDragEnd);
+                header.addEventListener('dragover', handleSectionDragOver);
+                header.addEventListener('drop', handleSectionDrop);
+                
+                header.addEventListener('dblclick', (e) => {
+                    header.setAttribute('draggable', 'false');
+                    makeEditable(header);
+                });
+                
+                header.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        header.setAttribute('draggable', 'true');
+                        PlannerData.save();
+                    }, 0);
+                });
+            }
+            
+            // Set up event listeners for items
+            const items = section.querySelectorAll('.draggable-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleItemDragStart);
+                item.addEventListener('dragend', handleItemDragEnd);
+                item.addEventListener('dragover', handleItemDragOver);
+                item.addEventListener('drop', handleItemDrop);
+                
+                const textSpan = item.querySelector('span:nth-child(2)');
+                if (textSpan) {
+                    item.addEventListener('dblclick', (e) => {
+                        if (e.target === textSpan) {
+                            item.setAttribute('draggable', 'false');
+                            makeEditable(textSpan);
+                        }
+                    });
+                    
+                    textSpan.addEventListener('blur', () => {
+                        setTimeout(() => {
+                            item.setAttribute('draggable', 'true');
+                            PlannerData.save();
+                        }, 0);
+                    });
+                }
+                
+                const checkbox = item.querySelector('.checkbox');
+                if (checkbox) {
+                    checkbox.addEventListener('click', () => {
+                        checkbox.classList.toggle('checked');
+                        PlannerData.save();
+                    });
+                }
+            });
+            
+            // Set up event listeners for add item button
+            const addItemButton = section.querySelector('.add-item-button');
+            if (addItemButton) {
+                addItemButton.addEventListener('click', () => {
+                    const list = section.querySelector('.sortable-list');
+                    const newId = `item-${Date.now()}`;
+                    
+                    const itemData = {
+                        id: newId,
+                        text: '',
+                        checked: false
+                    };
+                    
+                    const li = PlannerData.createItem(itemData);
+                    PlannerData.setupItemEventListeners(li);
+                    list.appendChild(li);
+                    
+                    // Make the text editable immediately
+                    const textSpan = li.querySelector('span:nth-child(2)');
+                    makeEditable(textSpan);
+                    
+                    PlannerData.save();
+                });
+            }
+            
+            // Set up event listeners for remove section button
+            const removeButton = section.querySelector('.remove-section-button');
+            if (removeButton) {
+                removeButton.addEventListener('click', () => {
+                    removeSection(section);
+                });
+            }
+            
+            // Set up event listeners for writing space
+            const writingSpace = section.querySelector('.writing-space');
+            if (writingSpace) {
+                writingSpace.addEventListener('input', () => {
+                    PlannerData.save();
+                });
+            }
+            
+            // Set up event listeners for sortable list
+            const list = section.querySelector('.sortable-list');
+            if (list) {
+                list.addEventListener('dragover', handleItemDragOver);
+                list.addEventListener('drop', handleItemDrop);
+            }
+        },
+        
+        // Set up all event listeners for an item
+        setupItemEventListeners(item) {
+            item.addEventListener('dragstart', handleItemDragStart);
+            item.addEventListener('dragend', handleItemDragEnd);
+            item.addEventListener('dragover', handleItemDragOver);
+            item.addEventListener('drop', handleItemDrop);
+            
+            const textSpan = item.querySelector('span:nth-child(2)');
+            if (textSpan) {
+                item.addEventListener('dblclick', (e) => {
+                    if (e.target === textSpan) {
+                        item.setAttribute('draggable', 'false');
+                        makeEditable(textSpan);
+                    }
+                });
+                
+                textSpan.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        item.setAttribute('draggable', 'true');
+                        PlannerData.save();
+                    }, 0);
+                });
+            }
+            
+            const checkbox = item.querySelector('.checkbox');
+            if (checkbox) {
+                checkbox.addEventListener('click', () => {
+                    checkbox.classList.toggle('checked');
+                    PlannerData.save();
+                });
+            }
+        },
+        
+        // Reset to default state
+        reset() {
+            localStorage.removeItem('plannerData');
+            window.location.reload();
+        }
+    };
+
     // Item dragging setup
     const draggableItems = document.querySelectorAll('.draggable-item');
     const sortableLists = document.querySelectorAll('.sortable-list');
@@ -84,6 +395,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Remove placeholder
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) placeholder.remove();
+        
+        // Save changes after drag ends
+        PlannerData.save();
     }
 
     function handleSectionDragOver(e) {
@@ -143,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) placeholder.remove();
         
-        saveOrder();
+        PlannerData.save();
     }
 
     function handleColumnDragOver(e) {
@@ -155,8 +469,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         
-        const type = e.dataTransfer.getData('type');
-        if (type !== 'section') return;
+        // Reading dataTransfer during dragover doesn't work reliably in all browsers
+        // We'll check if body has dragging-section class instead
+        if (!document.body.classList.contains('dragging-section')) return;
 
         // Remove drag-over class from all columns and sections
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
@@ -180,6 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let closestDistance = Infinity;
         
         sections.forEach(section => {
+            if (!section.classList.contains('planner-section')) return;
+            
             const rect = section.getBoundingClientRect();
             const distance = Math.abs(rect.top + rect.height / 2 - dropY);
             
@@ -212,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const draggedId = e.dataTransfer.getData('text/plain');
         const draggedSection = document.querySelector(`[data-section="${draggedId}"]`);
+        if (!draggedSection) return;
         
         // Find the closest section to the drop position
         const sections = Array.from(this.children);
@@ -221,6 +539,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let closestDistance = Infinity;
         
         sections.forEach(section => {
+            if (!section.classList.contains('planner-section')) return;
+            
             const rect = section.getBoundingClientRect();
             const distance = Math.abs(rect.top + rect.height / 2 - dropY);
             
@@ -250,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) placeholder.remove();
         
-        saveOrder();
+        PlannerData.save();
     }
 
     // Item drag handlers - modified to check for section dragging
@@ -269,10 +589,12 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.remove('dragging');
         document.body.classList.remove('dragging');
         // Remove drag-over class from all items
-        draggableItems.forEach(item => item.classList.remove('drag-over'));
+        document.querySelectorAll('.draggable-item').forEach(item => item.classList.remove('drag-over'));
         // Remove placeholder
         const placeholder = document.querySelector('.drag-placeholder');
         if (placeholder) placeholder.remove();
+        
+        PlannerData.save();
     }
 
     function handleItemDragOver(e) {
@@ -297,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const position = e.clientY < midY ? 'before' : 'after';
             
             // Remove drag-over class from all items except the dragged item
-            draggableItems.forEach(item => {
+            document.querySelectorAll('.draggable-item').forEach(item => {
                 if (item.classList.contains('dragging')) return;
                 item.classList.remove('drag-over');
             });
@@ -324,6 +646,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let closestDistance = Infinity;
             
             items.forEach(item => {
+                if (!item.classList.contains('draggable-item')) return;
+                
                 const rect = item.getBoundingClientRect();
                 const distance = Math.abs(rect.top + rect.height / 2 - dropY);
                 
@@ -334,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Remove drag-over class from all items
-            draggableItems.forEach(item => item.classList.remove('drag-over'));
+            document.querySelectorAll('.draggable-item').forEach(item => item.classList.remove('drag-over'));
             
             // Move placeholder
             if (closestItem) {
@@ -358,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const draggedId = e.dataTransfer.getData('text/plain');
         const draggedItem = document.querySelector(`[data-id="${draggedId}"]`);
+        if (!draggedItem) return;
         
         // If dropping on a list item
         if (this.classList.contains('draggable-item')) {
@@ -381,6 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let closestDistance = Infinity;
             
             items.forEach(item => {
+                if (!item.classList.contains('draggable-item')) return;
+                
                 const rect = item.getBoundingClientRect();
                 const distance = Math.abs(rect.top + rect.height / 2 - dropY);
                 
@@ -414,179 +741,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholder = document.querySelector('.drag-placeholder');
         if (placeholder) placeholder.remove();
         
-        // Save the new order to localStorage
-        saveOrder();
+        PlannerData.save();
     }
 
-    // Load the saved order and content from localStorage
-    function loadOrder() {
-        const savedOrder = localStorage.getItem('plannerOrder');
-        const savedContent = localStorage.getItem('plannerContent');
-        const savedColumnOrder = localStorage.getItem('columnOrder');
-        
-        if (!savedOrder || !savedContent) return; // Don't proceed if no saved data
-        
-        try {
-            const order = JSON.parse(savedOrder);
-            const content = JSON.parse(savedContent);
-            const columnOrder = savedColumnOrder ? JSON.parse(savedColumnOrder) : null;
-            
-            // First restore content and create any missing items
-            document.querySelectorAll('.planner-section').forEach(section => {
-                const sectionId = section.dataset.section;
-                const list = section.querySelector('.sortable-list');
-                if (!list) return; // Skip sections without lists
-                
-                // Clear existing items
-                list.innerHTML = '';
-                
-                // Get the order for this section
-                const itemIds = order[sectionId] || [];
-                
-                // Restore or create items in the correct order
-                itemIds.forEach(itemId => {
-                    const itemContent = content[`item_${itemId}`];
-                    if (itemContent !== undefined) { // Check if we have content for this item
-                        // Create new item
-                        const li = document.createElement('li');
-                        li.className = 'draggable-item';
-                        li.draggable = true;
-                        li.dataset.id = itemId;
-                        
-                        // Create checkbox
-                        const checkbox = document.createElement('span');
-                        checkbox.className = 'checkbox';
-                        
-                        // Create text span
-                        const textSpan = document.createElement('span');
-                        textSpan.textContent = itemContent;
-                        
-                        // Add drag event listeners
-                        li.addEventListener('dragstart', handleItemDragStart);
-                        li.addEventListener('dragend', handleItemDragEnd);
-                        li.addEventListener('dragover', handleItemDragOver);
-                        li.addEventListener('drop', handleItemDrop);
-                        
-                        // Add double-click listener for editing
-                        li.addEventListener('dblclick', (e) => {
-                            if (e.target === textSpan) {
-                                li.setAttribute('draggable', 'false');
-                                makeEditable(textSpan);
-                            }
-                        });
-                        
-                        // Add blur listener to restore draggable
-                        textSpan.addEventListener('blur', () => {
-                            setTimeout(() => {
-                                li.setAttribute('draggable', 'true');
-                                saveOrder();
-                            }, 0);
-                        });
-                        
-                        // Assemble and add the item
-                        li.appendChild(checkbox);
-                        li.appendChild(textSpan);
-                        list.appendChild(li);
-                    }
-                });
-                
-                // Restore section title if exists
-                const title = content[`title_${sectionId}`];
-                if (title) {
-                    section.querySelector('h2').textContent = title;
-                }
-                
-                // Restore writing space content if exists
-                const writingSpace = section.querySelector('.writing-space');
-                if (writingSpace) {
-                    const writingContent = content[`writing_${sectionId}`];
-                    if (writingContent) {
-                        writingSpace.value = writingContent;
-                    }
-                }
-            });
-            
-            // Then restore section order within columns if available
-            if (columnOrder) {
-                const columns = document.querySelectorAll('.column');
-                
-                Object.entries(columnOrder).forEach(([columnKey, sectionIds]) => {
-                    const columnIndex = parseInt(columnKey.split('_')[1]);
-                    const column = columns[columnIndex];
-                    if (column) {
-                        sectionIds.forEach(sectionId => {
-                            const section = document.querySelector(`[data-section="${sectionId}"]`);
-                            if (section) {
-                                column.appendChild(section);
-                            }
-                        });
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error loading saved data:', error);
-            // If there's an error loading the data, clear it to prevent future errors
-            localStorage.removeItem('plannerOrder');
-            localStorage.removeItem('plannerContent');
-            localStorage.removeItem('columnOrder');
-        }
-    }
-
-    // Save the current order and content to localStorage
-    function saveOrder() {
-        try {
-            const order = {};
-            const content = {};
-            const columnOrder = {};
-            
-            // Save column and section order
-            document.querySelectorAll('.column').forEach((column, columnIndex) => {
-                columnOrder[`column_${columnIndex}`] = Array.from(column.children)
-                    .filter(child => child.classList.contains('planner-section'))
-                    .map(section => section.dataset.section);
-            });
-            
-            // Save section titles and items
-            document.querySelectorAll('.planner-section').forEach(section => {
-                const sectionId = section.dataset.section;
-                
-                // Save section title
-                const title = section.querySelector('h2').textContent;
-                content[`title_${sectionId}`] = title;
-                
-                // Save items
-                const list = section.querySelector('.sortable-list');
-                if (list) {
-                    // Get all items, including newly added ones
-                    const items = Array.from(list.children)
-                        .filter(item => item.classList.contains('draggable-item'));
-                    
-                    // Save the order
-                    order[sectionId] = items.map(item => item.dataset.id);
-                    
-                    // Save item content
-                    items.forEach(item => {
-                        const itemId = item.dataset.id;
-                        const textSpan = item.querySelector('span:not(.checkbox)');
-                        if (textSpan) {
-                            content[`item_${itemId}`] = textSpan.textContent;
-                        }
-                    });
-                }
-                
-                // Save writing space content if it exists
-                const writingSpace = section.querySelector('.writing-space');
-                if (writingSpace) {
-                    content[`writing_${sectionId}`] = writingSpace.value;
-                }
-            });
-            
-            // Save to localStorage
-            localStorage.setItem('plannerOrder', JSON.stringify(order));
-            localStorage.setItem('plannerContent', JSON.stringify(content));
-            localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
-        } catch (error) {
-            console.error('Error saving data:', error);
+    // Load saved order and content when the page loads
+    function loadState() {
+        const savedState = PlannerData.load();
+        if (savedState) {
+            PlannerData.applyState(savedState);
+        } else {
+            // If no saved state exists, use the initial HTML state and save it
+            PlannerData.save();
         }
     }
 
@@ -604,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.textContent = '';
             }
             // Save order after content is updated
-            saveOrder();
+            PlannerData.save();
             element.removeEventListener('blur', handleBlur);
             element.removeEventListener('keydown', handleKeyDown);
         }
@@ -661,95 +826,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add new item functionality
-    document.querySelectorAll('.add-item-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const section = button.closest('.planner-section');
-            const list = section.querySelector('.sortable-list');
-            const newId = `item-${Date.now()}`; // Create unique ID
-            
-            // Create new item
-            const li = document.createElement('li');
-            li.className = 'draggable-item';
-            li.draggable = true;
-            li.dataset.id = newId;
-            
-            // Create checkbox
-            const checkbox = document.createElement('span');
-            checkbox.className = 'checkbox';
-            
-            // Create text span
-            const textSpan = document.createElement('span');
-            textSpan.textContent = ''; // Empty by default
-            
-            // Add drag event listeners
-            li.addEventListener('dragstart', handleItemDragStart);
-            li.addEventListener('dragend', handleItemDragEnd);
-            li.addEventListener('dragover', handleItemDragOver);
-            li.addEventListener('drop', handleItemDrop);
-            
-            // Add double-click listener for editing
-            li.addEventListener('dblclick', (e) => {
-                if (e.target === textSpan) {
-                    li.setAttribute('draggable', 'false');
-                    makeEditable(textSpan);
-                }
-            });
-            
-            // Add blur listener to restore draggable
-            textSpan.addEventListener('blur', () => {
-                setTimeout(() => {
-                    li.setAttribute('draggable', 'true');
-                    // Save order after the text content has been updated
-                    saveOrder();
-                }, 0);
-            });
-            
-            // Assemble and add the new item
-            li.appendChild(checkbox);
-            li.appendChild(textSpan);
-            list.appendChild(li);
-            
-            // Save order immediately after adding the new item
-            saveOrder();
-            
-            // Focus and make editable immediately
-            makeEditable(textSpan);
-        });
+    // Add new section functionality
+    document.querySelector('.add-section-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const columns = document.querySelectorAll('.column');
+        const lastColumn = columns[columns.length - 1];
+        const newId = `section-${Date.now()}`;
+        
+        // Create new section
+        const sectionData = {
+            title: 'New Section',
+            items: [],
+            isTextSection: false,
+            textContent: '',
+            columnIndex: columns.length - 1
+        };
+        
+        const section = PlannerData.createSection(newId, sectionData);
+        PlannerData.setupSectionEventListeners(section);
+        
+        // Add to the last column
+        lastColumn.appendChild(section);
+        
+        // Save order and make title editable
+        PlannerData.save();
+        makeEditable(section.querySelector('h2'));
     });
 
-    // Load saved order and content when the page loads
-    loadOrder();
-
+    // Update section removal logic
+    function removeSection(section) {
+        if (confirm('Are you sure you want to remove this section and all its items?')) {
+            // Remove the section from the DOM
+            section.remove();
+            
+            // Save changes to localStorage
+            PlannerData.save();
+        }
+    }
+    
     // Reset functionality
-    document.querySelector('.action-button:not(.orientation-toggle)').addEventListener('click', () => {
+    document.querySelector('.action-button.reset-button').addEventListener('click', () => {
         if (confirm('Are you sure you want to reset everything? This will remove all changes you have made.')) {
-            localStorage.clear();
-            window.location.reload();
+            // Clear localStorage and reload
+            PlannerData.reset();
         }
     });
 
     // Orientation toggle functionality
     const orientationToggle = document.querySelector('.orientation-toggle');
-    const plannerContainer = document.querySelector('.planner-container');
-    let isLandscape = true;
-
     orientationToggle.addEventListener('click', () => {
-        isLandscape = !isLandscape;
-        plannerContainer.classList.toggle('portrait', !isLandscape);
-        document.body.classList.toggle('portrait-mode', !isLandscape);
+        document.body.classList.toggle('portrait-mode');
+        const isLandscape = !document.body.classList.contains('portrait-mode');
         orientationToggle.textContent = isLandscape ? 'Landscape' : 'Portrait';
         
-        // Save only the orientation preference
-        localStorage.setItem('orientation', isLandscape ? 'landscape' : 'portrait');
+        // Save the updated state
+        PlannerData.save();
     });
 
-    // Load saved orientation preference
-    const savedOrientation = localStorage.getItem('orientation');
-    if (savedOrientation === 'portrait') {
-        isLandscape = false;
-        plannerContainer.classList.add('portrait');
-        document.body.classList.add('portrait-mode');
-        orientationToggle.textContent = 'Portrait';
-    }
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.checkbox').forEach(checkbox => {
+        checkbox.addEventListener('click', () => {
+            checkbox.classList.toggle('checked');
+            PlannerData.save();
+        });
+    });
+
+    // Add event listeners to writing spaces
+    document.querySelectorAll('.writing-space').forEach(textarea => {
+        textarea.addEventListener('input', () => {
+            PlannerData.save();
+        });
+    });
+
+    // Initialize the application
+    loadState();
 }); 

@@ -10,15 +10,22 @@
     <header class="app-header">
         <h1>My Daily Planner</h1>
         <div class="action-buttons">
+            <span class="action-button add-section-button">Add Box</span>
             <span class="action-button orientation-toggle">Landscape</span>
-            <span class="action-button">Reset</span>
+            <span class="action-button reset-button">Reset</span>
         </div>
     </header>
     
     <main class="planner-container">
         <div class="column">
             <section class="planner-section" data-section="morning">
-                <h2 draggable="true">🕰️ Morning Routine</h2>
+                <div class="section-header">
+                    <h2 draggable="true">🕰️ Morning Routine</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                        <button class="remove-section-button" title="Remove section">−</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="wake-up"><span class="checkbox"></span><span>☀️ Wake Up</span></li>
                     <li draggable="true" class="draggable-item" data-id="brush-teeth"><span class="checkbox"></span><span>🦷 Brush Teeth</span></li>
@@ -30,7 +37,12 @@
             </section>
 
             <section class="planner-section" data-section="something-else">
-                <h2 draggable="true">💡 Something Else</h2>
+                <div class="section-header">
+                    <h2 draggable="true">💡 Something Else</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="blank-1"><span class="checkbox"></span><span></span></li>
                     <li draggable="true" class="draggable-item" data-id="blank-2"><span class="checkbox"></span><span></span></li>
@@ -42,7 +54,12 @@
 
         <div class="column">
             <section class="planner-section" data-section="homework">
-                <h2 draggable="true">📖 Homework & Chores</h2>
+                <div class="section-header">
+                    <h2 draggable="true">📖 Homework & Chores</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="math"><span class="checkbox"></span><span>➗ Math</span></li>
                     <li draggable="true" class="draggable-item" data-id="reading"><span class="checkbox"></span><span>📖 Reading</span></li>
@@ -56,7 +73,12 @@
             </section>
 
             <section class="planner-section" data-section="sensory">
-                <h2 draggable="true">🌀 Sensory Needs</h2>
+                <div class="section-header">
+                    <h2 draggable="true">🌀 Sensory Needs</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="quiet-time"><span class="checkbox"></span><span>🎧 I needed quiet time</span></li>
                     <li draggable="true" class="draggable-item" data-id="movement"><span class="checkbox"></span><span>🏃 I needed movement</span></li>
@@ -68,7 +90,12 @@
 
         <div class="column">
             <section class="planner-section" data-section="feelings">
-                <h2 draggable="true">😊 How Did I Feel Today?</h2>
+                <div class="section-header">
+                    <h2 draggable="true">😊 How Did I Feel Today?</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="happy"><span class="checkbox"></span><span>😀 Happy</span></li>
                     <li draggable="true" class="draggable-item" data-id="sad"><span class="checkbox"></span><span>😢 Sad</span></li>
@@ -79,7 +106,12 @@
             </section>
 
             <section class="planner-section" data-section="winding-down">
-                <h2 draggable="true">🌙 Winding Down</h2>
+                <div class="section-header">
+                    <h2 draggable="true">🌙 Winding Down</h2>
+                    <div class="section-actions">
+                        <button class="add-item-button" title="Add new item">+</button>
+                    </div>
+                </div>
                 <ul class="sortable-list">
                     <li draggable="true" class="draggable-item" data-id="bath"><span class="checkbox"></span><span>🛁 Take a bath or shower</span></li>
                     <li draggable="true" class="draggable-item" data-id="brush-teeth-night"><span class="checkbox"></span><span>🦷 Brush Teeth</span></li>
