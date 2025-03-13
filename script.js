@@ -19,8 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const title = section.querySelector('h2').textContent;
                 const isTextSection = section.querySelector('textarea') !== null;
                 let textContent = '';
+                let placeholder = '';
                 if (isTextSection) {
-                    textContent = section.querySelector('textarea')?.value || '';
+                    const textarea = section.querySelector('textarea');
+                    textContent = textarea?.value || '';
+                    placeholder = textarea?.getAttribute('placeholder') || 'Write about any moment today that made you feel nice...';
                 }
                 
                 const columnElement = section.closest('.column');
@@ -31,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     items,
                     isTextSection,
                     textContent,
+                    placeholder,
                     columnIndex
                 };
             });
@@ -129,9 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (sectionData.isTextSection) {
                 // Create text-type section (like "Happy Moment")
+                const placeholder = sectionData.placeholder || 'Write about any moment today that made you feel nice...';
                 section.innerHTML = `
                     <h2 draggable="true">${sectionData.title}</h2>
-                    <textarea class="writing-space" placeholder="Write here...">${sectionData.textContent || ''}</textarea>
+                    <textarea class="writing-space" placeholder="${placeholder}">${sectionData.textContent || ''}</textarea>
                 `;
             } else {
                 // Create list-type section (standard task list)
