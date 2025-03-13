@@ -396,22 +396,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Section drag handlers - completely separate from item handlers
     function handleSectionDragStart(e) {
-        // If we're dragging an item, don't allow section dragging
-        if (document.body.classList.contains('dragging')) {
-            e.preventDefault();
+        // Don't interfere with item dragging
+        if (e.target.closest('.planner-item')) {
             return;
         }
-        const section = this.closest('.planner-section');
-        section.classList.add('dragging-section');
-        document.body.classList.add('dragging');
+        
+        // Get the section element
+        const section = e.target.closest('.planner-section');
+        if (!section) return;
+        
+        // Set dragging state
         document.body.classList.add('dragging-section');
-        e.dataTransfer.setData('text/plain', section.dataset.section);
-        e.dataTransfer.setData('type', 'section');
+        section.classList.add('dragging-section');
+        
+        // Set drag data
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('type', 'section');
+        e.dataTransfer.setData('text/plain', section.dataset.section);
         
-        // Use default browser drag image (no need to set custom drag image)
+        // Create a placeholder element
+        const placeholder = document.createElement('div');
+        placeholder.className = 'section-placeholder';
         
-        // Hide the original element (make it invisible in the list)
+        // Insert placeholder after (or before) the dragged section
+        if (section.nextElementSibling) {
+            section.parentNode.insertBefore(placeholder, section.nextElementSibling);
+        } else {
+            section.parentNode.appendChild(placeholder);
+        }
+        
+        // Calculate proper offsets for the drag image to make dragging feel natural
+        // This keeps the cursor at the same relative position on the element during the drag
+        const sectionRect = section.getBoundingClientRect();
+        const offsetX = e.clientX - sectionRect.left;
+        const offsetY = e.clientY - sectionRect.top;
+        
+        // Use the section as drag image with the calculated offsets
+        e.dataTransfer.setDragImage(section, offsetX, offsetY);
+        
+        // Hide the original element after the drag image is created
         // We need a small delay to let the drag image be created first
         setTimeout(() => {
             section.style.display = 'none';
@@ -419,28 +442,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleSectionDragEnd(e) {
-        const section = this.closest('.planner-section');
-        section.classList.remove('dragging-section');
-        document.body.classList.remove('dragging');
+        // Get the section that was being dragged
+        const section = e.target.closest('.planner-section');
+        if (!section) return;
+        
+        // Remove all drag-related classes
         document.body.classList.remove('dragging-section');
+        section.classList.remove('dragging-section');
         
-        // Make section visible again
-        section.style.display = '';
-        
-        // Remove drag-over class from all sections
-        document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
-        document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
-        
-        // Get the placeholder
+        // If the placeholder still exists, this means the drop didn't occur
+        // We need to restore the section to its original position
         const placeholder = document.querySelector('.section-placeholder');
-        
-        // Place the section in the placeholder's position
-        if (placeholder && placeholder.parentNode) {
-            placeholder.parentNode.insertBefore(section, placeholder);
-            placeholder.remove();
+        if (placeholder) {
+            // We need to show the section first
+            section.style.removeProperty('display');
+            
+            // Move section to where the placeholder is and remove the placeholder
+            if (placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(section, placeholder);
+                placeholder.remove();
+            }
+        } else {
+            // Make sure the section is visible
+            section.style.removeProperty('display');
         }
         
-        // Save changes after drag ends
+        // Remove drag-over classes
+        document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
+        document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
+        
+        // Save the updated layout
         PlannerData.save();
     }
 
@@ -537,9 +568,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const draggingSection = document.querySelector('.planner-section.dragging-section');
         if (!draggingSection) return;
 
-        // Get the existing placeholder
+        // Get or create the placeholder
         let placeholder = document.querySelector('.section-placeholder');
-        if (!placeholder) return;
+        if (!placeholder) {
+            placeholder = document.createElement('div');
+            placeholder.className = 'section-placeholder';
+            
+            // Insert placeholder at the dragged section's original position first time
+            if (draggingSection.nextElementSibling) {
+                draggingSection.parentNode.insertBefore(placeholder, draggingSection.nextElementSibling);
+            } else {
+                draggingSection.parentNode.appendChild(placeholder);
+            }
+        }
 
         // Remove drag-over class from all columns and sections
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
@@ -548,12 +589,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add drag-over class to current column
         this.classList.add('drag-over-section');
 
-        // Find the closest section to the drop position
+        // Find sections in this column (excluding the dragged section)
         const sections = Array.from(this.children).filter(child => 
             child.classList.contains('planner-section') && child !== draggingSection
         );
+        
+        // Get column boundaries for empty column case
+        const columnRect = this.getBoundingClientRect();
         const dropY = e.clientY;
         
+        // If column is empty or cursor is below all sections, append to the end
+        if (sections.length === 0 || dropY > sections[sections.length - 1].getBoundingClientRect().bottom) {
+            if (this.lastChild !== placeholder) {
+                this.appendChild(placeholder);
+            }
+            return;
+        }
+        
+        // Find the closest section to the drop position for non-empty columns
         let closestSection = null;
         let closestDistance = Infinity;
         
@@ -580,61 +633,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.insertBefore(placeholder, closestSection.nextSibling);
                 }
             }
-        } else {
-            // If no sections in the column or drop position is at the bottom
-            // Only append if it's not already the last child
-            if (this.lastChild !== placeholder) {
-                this.appendChild(placeholder);
-            }
         }
     }
 
     function handleColumnDrop(e) {
         e.preventDefault();
         
-        const type = e.dataTransfer.getData('type');
-        if (type !== 'section') return;
-
-        const draggedId = e.dataTransfer.getData('text/plain');
-        const draggedSection = document.querySelector(`[data-section="${draggedId}"]`);
-        if (!draggedSection) return;
+        if (!document.body.classList.contains('dragging-section')) return;
         
-        // Get the placeholder
+        const draggingSection = document.querySelector('.planner-section.dragging-section');
+        if (!draggingSection) return;
+        
         const placeholder = document.querySelector('.section-placeholder');
-        if (!placeholder) return;
         
-        // Find the closest section to the drop position
-        const sections = Array.from(this.children).filter(child => 
-            child.classList.contains('planner-section') && child !== draggedSection
-        );
-        const dropY = e.clientY;
-        
-        let closestSection = null;
-        let closestDistance = Infinity;
-        
-        sections.forEach(section => {
-            const rect = section.getBoundingClientRect();
-            const distance = Math.abs(rect.top + rect.height / 2 - dropY);
-            
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestSection = section;
-            }
-        });
-        
-        if (closestSection) {
-            const rect = closestSection.getBoundingClientRect();
-            const position = dropY < rect.top + rect.height / 2 ? 'before' : 'after';
-            
-            if (position === 'before') {
-                this.insertBefore(placeholder, closestSection);
-            } else {
-                this.insertBefore(placeholder, closestSection.nextSibling);
-            }
-        } else {
-            // If no sections in the column or drop position is at the bottom
-            this.appendChild(placeholder);
+        // Move the section to where the placeholder is
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(draggingSection, placeholder);
+            placeholder.remove();
         }
+        
+        // Clean up
+        document.body.classList.remove('dragging-section');
+        draggingSection.classList.remove('dragging-section');
+        
+        // Remove drag-over classes
+        document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
+        document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
+        
+        // Save the updated layout
+        PlannerData.save();
     }
 
     // Item drag handlers - modified to check for section dragging
