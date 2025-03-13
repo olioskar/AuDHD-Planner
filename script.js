@@ -643,17 +643,29 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             return;
         }
-        this.classList.add('dragging');
+        
+        const item = this;
+        item.classList.add('dragging');
         document.body.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', this.dataset.id);
+        e.dataTransfer.setData('text/plain', item.dataset.id);
         e.dataTransfer.effectAllowed = 'move';
         
-        // Use default browser drag image (no need to set custom drag image)
-        
-        // Hide the original element (make it invisible in the list)
-        // We need a small delay to let the drag image be created first
+        // Delay hiding the original item and creating the placeholder
+        // to let the browser create the drag image first
         setTimeout(() => {
-            this.style.display = 'none';
+            // Create placeholder and place it where the dragged item was
+            const placeholder = document.createElement('div');
+            placeholder.className = 'drag-placeholder';
+            
+            // Insert placeholder after the item (so it's in the right place after the item is hidden)
+            if (item.nextElementSibling) {
+                item.parentNode.insertBefore(placeholder, item.nextElementSibling);
+            } else {
+                item.parentNode.appendChild(placeholder);
+            }
+            
+            // Now hide the original item
+            item.style.display = 'none';
         }, 0);
     }
 
@@ -691,18 +703,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const draggingItem = document.querySelector('.draggable-item.dragging');
         if (!draggingItem) return;
 
-        // Create or get the placeholder
-        let placeholder = document.querySelector('.drag-placeholder');
+        // Get the existing placeholder (which should have been created in dragStart)
+        const placeholder = document.querySelector('.drag-placeholder');
         if (!placeholder) {
-            placeholder = document.createElement('div');
-            placeholder.className = 'drag-placeholder';
-            
-            // Insert placeholder at the dragged item's original position first time
-            if (draggingItem.nextElementSibling) {
-                draggingItem.parentNode.insertBefore(placeholder, draggingItem.nextElementSibling);
-            } else {
-                draggingItem.parentNode.appendChild(placeholder);
-            }
+            // If there's no placeholder yet (unlikely but possible), don't do anything
+            // The placeholder will be created when the dragStart timeout finishes
+            return;
         }
 
         // If dropping on a list item
