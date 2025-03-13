@@ -315,8 +315,10 @@ body.dragging .draggable-item.drag-over {
     margin-top: 0; /* Remove margin-top since section header already has margin-bottom */
     margin-bottom: 3px; /* Adjusted to match the bottom padding of section */
     background: #fff;
-    width: 100%;
-    padding: 10px;
+    width: calc(100% - 10px); /* Adjust width to account for left/right margins */
+    margin-left: 5px; /* Match left section padding */
+    margin-right: 5px; /* Match right section padding */
+    padding: 8px; /* Slightly reduced to ensure visual consistency */
     font-family: inherit;
     font-size: 1em;
     resize: none;
