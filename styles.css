@@ -186,12 +186,13 @@ body {
     margin: -2px -4px;
 }
 
-/* Section dragging styles - completely separate from item dragging */
+/* Section dragging styles */
 .planner-section.dragging-section {
-    opacity: 0.8;
+    opacity: 1; /* Full opacity for the ghost */
     background: #e3f2fd;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: scale(1.02);
+    cursor: grabbing;
 }
 
 .planner-section.drag-over-section {
@@ -200,12 +201,14 @@ body {
 
 /* Section placeholder styles */
 .section-placeholder {
-    border: none;
-    background-color: transparent;
+    background-color: rgba(74, 144, 226, 0.1);
+    border: 1px dashed #4a90e2;
+    border-radius: 6px;
     min-height: 80px;
     height: auto;
     margin: 10px 0;
     flex-shrink: 0;
+    pointer-events: none; /* Ensure this doesn't interfere with drag events */
 }
 
 .column.drag-over-section {
@@ -272,28 +275,32 @@ body.dragging .draggable-item.drag-over {
     background: #f0f7ff;
 }
 
+/* Item dragging styles */
 .draggable-item.dragging {
-    opacity: 0.5;
+    opacity: 1; /* Full opacity for the ghost */
     background: #e3f2fd;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+    cursor: grabbing;
 }
 
-/* Remove the dashed border from draggable items */
-.draggable-item.drag-over {
-    background: #e3f2fd;
-}
-
-/* Keep the dashed border only for sections */
-.planner-section.drag-over-section {
-    border: 2px dashed #4a90e2;
+/* Remove unnecessary classes since we're using placeholders */
+.draggable-item.drag-over,
+.planner-section.drag-over-section,
+.column.drag-over-section {
+    background: transparent;
+    border: none;
 }
 
 /* Drag placeholder styles */
 .drag-placeholder {
     height: 44px; /* Height of draggable-item (including margin) */
-    background: transparent;
-    border: none;
-    margin-bottom: 8px;
+    background: rgba(74, 144, 226, 0.1);
+    border: 1px dashed #4a90e2;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+    pointer-events: none; /* Ensure this doesn't interfere with drag events */
 }
 
 /* Checkbox styles */
