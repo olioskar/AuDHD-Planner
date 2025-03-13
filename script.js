@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return {
                 sections,
                 columnsOrder,
-                orientation: document.body.classList.contains('landscape') ? 'landscape' : 'portrait'
+                orientation: document.body.classList.contains('portrait-mode') ? 'portrait' : 'landscape'
             };
         },
         
@@ -84,9 +84,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Apply orientation
             if (state.orientation === 'landscape') {
                 document.body.classList.remove('portrait-mode');
+                document.querySelector('.planner-container').classList.remove('portrait');
                 document.querySelector('.orientation-toggle').textContent = 'Landscape';
             } else {
                 document.body.classList.add('portrait-mode');
+                document.querySelector('.planner-container').classList.add('portrait');
                 document.querySelector('.orientation-toggle').textContent = 'Portrait';
             }
             
@@ -913,6 +915,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const orientationToggle = document.querySelector('.orientation-toggle');
     orientationToggle.addEventListener('click', () => {
         document.body.classList.toggle('portrait-mode');
+        const plannerContainer = document.querySelector('.planner-container');
+        plannerContainer.classList.toggle('portrait');
         const isLandscape = !document.body.classList.contains('portrait-mode');
         orientationToggle.textContent = isLandscape ? 'Landscape' : 'Portrait';
         
