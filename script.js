@@ -791,7 +791,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedState) {
             PlannerData.applyState(savedState);
         } else {
-            // If no saved state exists, use the initial HTML state and save it
+            // If no saved state exists, use the initial HTML state
+            // Set up event listeners for all sections in the initial HTML
+            document.querySelectorAll('.planner-section').forEach(section => {
+                PlannerData.setupSectionEventListeners(section);
+            });
+            
+            // Save the initial state
             PlannerData.save();
         }
     }
