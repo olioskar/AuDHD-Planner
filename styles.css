@@ -103,7 +103,7 @@ body {
 /* Section styles */
 .planner-section {
     background: #f8f9fa;
-    border-radius: 10px;
+    border-radius: 6px;
     padding: 5px 5px 3px 5px; /* Adjusted to reduce bottom padding */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -311,7 +311,7 @@ body.dragging .draggable-item.drag-over {
 .writing-space {
     height: 100px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     margin-top: 0; /* Remove margin-top since section header already has margin-bottom */
     margin-bottom: 3px; /* Adjusted to match the bottom padding of section */
     background: #fff;
