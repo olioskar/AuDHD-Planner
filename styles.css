@@ -1,4 +1,11 @@
 /* Reset and base styles */
+html {
+    /* Prevent layout shift when scrollbar appears */
+    scrollbar-gutter: stable;
+    /* Fallback for browsers without scrollbar-gutter support */
+    overflow-y: scroll;
+}
+
 * {
     margin: 0;
     padding: 0;
