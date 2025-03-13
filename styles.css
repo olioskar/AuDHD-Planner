@@ -127,6 +127,17 @@ body {
     flex: 1;
 }
 
+/* Style for h2 in happy moment section (text sections) to match other sections */
+.planner-section > h2 {
+    font-size: 1em;
+    color: #2c3e50;
+    cursor: grab;
+    font-weight: bold;
+    outline: none;
+    margin: 0 0 10px 5px;
+    padding: 0 5px;
+}
+
 .section-actions {
     display: flex;
     gap: 5px;
@@ -293,7 +304,7 @@ body.dragging .draggable-item.drag-over {
 /* Writing space styles */
 .writing-space {
     height: 100px;
-    border: 2px dashed #4a90e2;
+    border: none;
     border-radius: 8px;
     margin-top: 0; /* Remove margin-top since section header already has margin-bottom */
     background: #fff;
@@ -303,12 +314,11 @@ body.dragging .draggable-item.drag-over {
     font-size: 1em;
     resize: none;
     outline: none;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
 .writing-space:focus {
-    border-color: #2c3e50;
-    background-color: #fff;
+    background-color: #f9f9f9;
 }
 
 .writing-space::placeholder {
