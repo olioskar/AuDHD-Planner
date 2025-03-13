@@ -454,13 +454,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // We need to restore the section to its original position
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) {
-            // We need to show the section first
-            section.style.removeProperty('display');
-            
-            // Move section to where the placeholder is and remove the placeholder
             if (placeholder.parentNode) {
+                // Make section visible but with transition
+                section.style.opacity = '0';
+                section.style.display = '';
+                section.style.transition = 'opacity 0.3s ease-in';
+                
+                // Move section to where the placeholder is and remove the placeholder
                 placeholder.parentNode.insertBefore(section, placeholder);
                 placeholder.remove();
+                
+                // Trigger reflow for the transition to work
+                section.offsetHeight;
+                
+                // Show the section with transition
+                section.style.opacity = '1';
+                
+                // Remove transition after it completes
+                setTimeout(() => {
+                    section.style.transition = '';
+                }, 300);
             }
         } else {
             // Make sure the section is visible
@@ -648,8 +661,25 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Move the section to where the placeholder is
         if (placeholder && placeholder.parentNode) {
+            // Make section visible but with transition
+            draggingSection.style.opacity = '0';
+            draggingSection.style.display = '';
+            draggingSection.style.transition = 'opacity 0.3s ease-in';
+            
+            // Insert the section at the placeholder position
             placeholder.parentNode.insertBefore(draggingSection, placeholder);
             placeholder.remove();
+            
+            // Trigger reflow for the transition to work
+            draggingSection.offsetHeight;
+            
+            // Show the section with transition
+            draggingSection.style.opacity = '1';
+            
+            // Remove transition after it completes
+            setTimeout(() => {
+                draggingSection.style.transition = '';
+            }, 300);
         }
         
         // Clean up
@@ -700,19 +730,38 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.remove('dragging');
         document.body.classList.remove('dragging');
         
-        // Make item visible again
-        this.style.display = '';
-        
         // Remove drag-over class from all items
         document.querySelectorAll('.draggable-item').forEach(item => item.classList.remove('drag-over'));
         
         // Get the placeholder
         const placeholder = document.querySelector('.drag-placeholder');
         
-        // Place the item in the placeholder's position
         if (placeholder && placeholder.parentNode) {
+            // Get placeholder position for animation
+            const placeholderRect = placeholder.getBoundingClientRect();
+            
+            // Make item visible but with transition
+            this.style.opacity = '0';
+            this.style.display = '';
+            this.style.transition = 'opacity 0.3s ease-in';
+            
+            // Place the item in the placeholder's position
             placeholder.parentNode.insertBefore(this, placeholder);
             placeholder.remove();
+            
+            // Trigger reflow for the transition to work
+            this.offsetHeight;
+            
+            // Show the item with transition
+            this.style.opacity = '1';
+            
+            // Remove transition after it completes
+            setTimeout(() => {
+                this.style.transition = '';
+            }, 300);
+        } else {
+            // Make item visible again if no placeholder (drop didn't occur)
+            this.style.display = '';
         }
         
         PlannerData.save();
