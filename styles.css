@@ -114,6 +114,10 @@ body {
     padding: 5px 5px 3px 5px; /* Adjusted to reduce bottom padding */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    break-inside: avoid;
+    page-break-inside: avoid; /* For older browsers */
+    break-before: auto;
+    page-break-before: auto; /* Start on new page only when needed */
 }
 
 .section-header {
@@ -442,6 +446,12 @@ body.dragging .draggable-item.drag-over {
 
     .drag-placeholder {
         display: none;
+    }
+    
+    /* Add this class via JavaScript before printing */
+    .planner-section.page-break-before {
+        break-before: page;
+        page-break-before: always;
     }
 }
 

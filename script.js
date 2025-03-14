@@ -1074,6 +1074,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Handle print page breaks
+    function handlePrintPageBreaks() {
+        // We need to calculate this right before printing
+        const isPortrait = document.body.classList.contains('portrait-mode');
+        const pageHeight = isPortrait ? 297 : 210; // A4 height in mm
+        const pageHeightPx = pageHeight * 3.779527559; // Convert mm to px (96 dpi)
+        
+        // Reset any previously set page breaks
+        document.querySelectorAll('.planner-section.page-break-before').forEach(section => {
+            section.classList.remove('page-break-before');
+        });
+        
+        // Get all sections
+        const sections = document.querySelectorAll('.planner-section');
+        let currentPageTop = 0;
+        
+        sections.forEach(section => {
+            const sectionRect = section.getBoundingClientRect();
+            const sectionHeight = sectionRect.height;
+            const sectionTop = sectionRect.top - document.body.getBoundingClientRect().top;
+            
+            // If this section would cross a page boundary
+            if (sectionTop + sectionHeight > currentPageTop + pageHeightPx) {
+                // If the section is not at the start of a page already
+                if (sectionTop > currentPageTop) {
+                    section.classList.add('page-break-before');
+                    currentPageTop = Math.ceil((sectionTop) / pageHeightPx) * pageHeightPx;
+                }
+            }
+        });
+    }
+    
+    // Set up print event listeners
+    window.addEventListener('beforeprint', handlePrintPageBreaks);
+    
+    // For browsers that don't support beforeprint
+    if (window.matchMedia) {
+        const mediaQueryList = window.matchMedia('print');
+        mediaQueryList.addListener(function(mql) {
+            if (mql.matches) {
+                handlePrintPageBreaks();
+            }
+        });
+    }
+
     // Initialize the application
     loadState();
 }); 
