@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
         getCurrentState() {
             const sections = {};
             document.querySelectorAll('.planner-section').forEach(section => {
+                // Skip sections that are hidden - this prevents saving a section that's in the middle of being dragged
+                if (section.style.display === 'none') {
+                    console.warn('Skipping section with display:none -', section.dataset.section);
+                    return;
+                }
+                
                 const sectionId = section.dataset.section;
                 const items = [];
                 
@@ -53,8 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Save current state to localStorage
         save() {
-            // Ensure all non-text sections have remove buttons before saving
+            // Ensure all sections are visible before saving
             document.querySelectorAll('.planner-section').forEach(section => {
+                // Fix any hidden sections before saving
+                if (section.style.display === 'none') {
+                    console.warn('Fixing hidden section before saving:', section.dataset.section);
+                    section.style.removeProperty('display');
+                    section.style.opacity = '1';
+                }
+                
+                // Ensure all non-text sections have remove buttons before saving
                 if (!section.querySelector('textarea')) {  // If not a text section
                     const actions = section.querySelector('.section-actions');
                     if (actions && !actions.querySelector('.remove-section-button')) {
@@ -66,6 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         actions.appendChild(removeBtn);
                     }
                 }
+            });
+            
+            // Clear any page break classes before saving
+            document.querySelectorAll('.planner-section.page-break-before').forEach(section => {
+                section.classList.remove('page-break-before');
             });
             
             const currentState = this.getCurrentState();
@@ -405,18 +424,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const section = e.target.closest('.planner-section');
         if (!section) return;
         
+        // Disable page break calculations during drag initiation
+        document.body.classList.add('disable-page-breaks');
+        
+        // Store starting scroll position to prevent unwanted scrolling
+        const startScrollY = window.scrollY;
+        
+        // Set section's original state for later restoration
+        section._originalDisplay = section.style.display || '';
+        section._hadPageBreak = section.classList.contains('page-break-before');
+        
+        // Remove page-break-before class immediately to prevent any printing conflicts
+        section.classList.remove('page-break-before');
+        
         // Set dragging state
         document.body.classList.add('dragging-section');
         section.classList.add('dragging-section');
+        document.body.classList.add('prevent-scroll-jump');
         
         // Set drag data
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('type', 'section');
         e.dataTransfer.setData('text/plain', section.dataset.section);
         
-        // Create a placeholder element
+        // Create a placeholder element that won't trigger scrolling
         const placeholder = document.createElement('div');
-        placeholder.className = 'section-placeholder';
+        placeholder.className = 'section-placeholder no-auto-scroll';
         
         // Insert placeholder after (or before) the dragged section
         if (section.nextElementSibling) {
@@ -425,8 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             section.parentNode.appendChild(placeholder);
         }
         
-        // Calculate proper offsets for the drag image to make dragging feel natural
-        // This keeps the cursor at the same relative position on the element during the drag
+        // Calculate proper offsets for the drag image
         const sectionRect = section.getBoundingClientRect();
         const offsetX = e.clientX - sectionRect.left;
         const offsetY = e.clientY - sectionRect.top;
@@ -434,11 +466,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use the section as drag image with the calculated offsets
         e.dataTransfer.setDragImage(section, offsetX, offsetY);
         
-        // Hide the original element after the drag image is created
-        // We need a small delay to let the drag image be created first
-        setTimeout(() => {
+        // Hide the original element after the drag image is created without triggering scroll
+        requestAnimationFrame(() => {
             section.style.display = 'none';
-        }, 0);
+            
+            // Restore scroll position if browser tried to jump
+            if (window.scrollY !== startScrollY) {
+                window.scrollTo(0, startScrollY);
+            }
+        });
     }
 
     function handleSectionDragEnd(e) {
@@ -446,23 +482,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const section = e.target.closest('.planner-section');
         if (!section) return;
         
-        // Remove all drag-related classes
-        document.body.classList.remove('dragging-section');
-        section.classList.remove('dragging-section');
+        // Make section visible immediately as a safety measure
+        section.style.display = section._originalDisplay || '';
+        section.style.opacity = '1';
         
         // If the placeholder still exists, this means the drop didn't occur
         // We need to restore the section to its original position
         const placeholder = document.querySelector('.section-placeholder');
         if (placeholder) {
             if (placeholder.parentNode) {
-                // Make section visible but with transition
+                // Prepare section for transition
                 section.style.opacity = '0';
-                section.style.display = '';
                 section.style.transition = 'opacity 0.3s ease-in';
+                
+                // Store scroll position before DOM change
+                const beforeScrollY = window.scrollY;
                 
                 // Move section to where the placeholder is and remove the placeholder
                 placeholder.parentNode.insertBefore(section, placeholder);
                 placeholder.remove();
+                
+                // Restore scroll position if it changed
+                if (window.scrollY !== beforeScrollY) {
+                    window.scrollTo(0, beforeScrollY);
+                }
                 
                 // Trigger reflow for the transition to work
                 section.offsetHeight;
@@ -475,17 +518,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     section.style.transition = '';
                 }, 300);
             }
-        } else {
-            // Make sure the section is visible
-            section.style.removeProperty('display');
         }
         
         // Remove drag-over classes
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
         document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
         
-        // Save the updated layout
-        PlannerData.save();
+        // Remove drag state flags
+        document.body.classList.remove('dragging-section');
+        document.body.classList.remove('disable-page-breaks');
+        document.body.classList.remove('prevent-scroll-jump');
+        section.classList.remove('dragging-section');
+        
+        // Delay saving slightly to ensure DOM is fully updated
+        setTimeout(() => {
+            // Save the updated layout
+            PlannerData.save();
+        }, 50);
     }
 
     function handleSectionDragOver(e) {
@@ -507,11 +556,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Skip if we're hovering over the dragged section itself
         if (section === draggingSection) return;
 
+        // Store current scroll position
+        const beforeScrollY = window.scrollY;
+
         // Create or get the placeholder
         let placeholder = document.querySelector('.section-placeholder');
         if (!placeholder) {
             placeholder = document.createElement('div');
-            placeholder.className = 'section-placeholder';
+            placeholder.className = 'section-placeholder no-auto-scroll';
             
             // Insert placeholder at the dragged section's original position first time
             if (draggingSection.nextElementSibling) {
@@ -536,6 +588,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (section.nextSibling !== placeholder) {
                 section.parentNode.insertBefore(placeholder, section.nextSibling);
             }
+        }
+        
+        // Restore scroll position if it changed during placeholder movement
+        if (window.scrollY !== beforeScrollY) {
+            window.scrollTo(0, beforeScrollY);
         }
     }
 
@@ -581,11 +638,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const draggingSection = document.querySelector('.planner-section.dragging-section');
         if (!draggingSection) return;
 
+        // Store current scroll position
+        const beforeScrollY = window.scrollY;
+
         // Get or create the placeholder
         let placeholder = document.querySelector('.section-placeholder');
         if (!placeholder) {
             placeholder = document.createElement('div');
-            placeholder.className = 'section-placeholder';
+            placeholder.className = 'section-placeholder no-auto-scroll';
             
             // Insert placeholder at the dragged section's original position first time
             if (draggingSection.nextElementSibling) {
@@ -615,6 +675,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sections.length === 0 || dropY > sections[sections.length - 1].getBoundingClientRect().bottom) {
             if (this.lastChild !== placeholder) {
                 this.appendChild(placeholder);
+            }
+            
+            // Restore scroll position if it changed
+            if (window.scrollY !== beforeScrollY) {
+                window.scrollTo(0, beforeScrollY);
             }
             return;
         }
@@ -647,6 +712,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+        
+        // Restore scroll position if it changed
+        if (window.scrollY !== beforeScrollY) {
+            window.scrollTo(0, beforeScrollY);
+        }
     }
 
     function handleColumnDrop(e) {
@@ -659,16 +729,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const placeholder = document.querySelector('.section-placeholder');
         
+        // Store current scroll position
+        const beforeScrollY = window.scrollY;
+        
         // Move the section to where the placeholder is
         if (placeholder && placeholder.parentNode) {
-            // Make section visible but with transition
+            // Prepare section for transition
             draggingSection.style.opacity = '0';
-            draggingSection.style.display = '';
+            draggingSection.style.display = draggingSection._originalDisplay || '';
             draggingSection.style.transition = 'opacity 0.3s ease-in';
             
             // Insert the section at the placeholder position
             placeholder.parentNode.insertBefore(draggingSection, placeholder);
             placeholder.remove();
+            
+            // Restore scroll position if it changed
+            if (window.scrollY !== beforeScrollY) {
+                window.scrollTo(0, beforeScrollY);
+            }
             
             // Trigger reflow for the transition to work
             draggingSection.offsetHeight;
@@ -680,18 +758,27 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 draggingSection.style.transition = '';
             }, 300);
+        } else {
+            // Make sure the section is visible regardless of what happened
+            draggingSection.style.display = draggingSection._originalDisplay || '';
+            draggingSection.style.opacity = '1';
         }
-        
-        // Clean up
-        document.body.classList.remove('dragging-section');
-        draggingSection.classList.remove('dragging-section');
         
         // Remove drag-over classes
         document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over-section'));
         document.querySelectorAll('.planner-section').forEach(s => s.classList.remove('drag-over-section'));
         
-        // Save the updated layout
-        PlannerData.save();
+        // Remove drag state flags
+        document.body.classList.remove('dragging-section');
+        document.body.classList.remove('disable-page-breaks');
+        document.body.classList.remove('prevent-scroll-jump');
+        draggingSection.classList.remove('dragging-section');
+        
+        // Delay saving slightly to ensure DOM is fully updated
+        setTimeout(() => {
+            // Save the updated layout
+            PlannerData.save();
+        }, 50);
     }
 
     // Item drag handlers - modified to check for section dragging
@@ -1074,8 +1161,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Handle print page breaks
+    // Handle print page breaks - Only run this right before printing
     function handlePrintPageBreaks() {
+        console.log('Print page breaks calculation started');
+        
+        // If we're in the middle of a drag operation, don't calculate page breaks
+        if (document.body.classList.contains('dragging') || 
+            document.body.classList.contains('dragging-section') ||
+            document.body.classList.contains('disable-page-breaks')) {
+            console.log('Skipping page breaks calculation during drag operation');
+            return;
+        }
+        
         // We need to calculate this right before printing
         const isPortrait = document.body.classList.contains('portrait-mode');
         const pageHeight = isPortrait ? 297 : 210; // A4 height in mm
@@ -1086,12 +1183,21 @@ document.addEventListener('DOMContentLoaded', () => {
             section.classList.remove('page-break-before');
         });
         
-        // Get all sections
-        const sections = document.querySelectorAll('.planner-section');
+        // Get all sections that are visible
+        const sections = Array.from(document.querySelectorAll('.planner-section')).filter(section => {
+            // Skip sections that are hidden, being dragged, or placeholder related
+            return section.style.display !== 'none' && 
+                   !section.classList.contains('dragging-section') &&
+                   !section.classList.contains('section-placeholder');
+        });
+        
         let currentPageTop = 0;
         
         sections.forEach(section => {
             const sectionRect = section.getBoundingClientRect();
+            // Skip elements with no height (hidden elements)
+            if (sectionRect.height === 0) return;
+            
             const sectionHeight = sectionRect.height;
             const sectionTop = sectionRect.top - document.body.getBoundingClientRect().top;
             
@@ -1100,24 +1206,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If the section is not at the start of a page already
                 if (sectionTop > currentPageTop) {
                     section.classList.add('page-break-before');
+                    console.log('Added page-break-before to section:', section.querySelector('h2')?.textContent);
                     currentPageTop = Math.ceil((sectionTop) / pageHeightPx) * pageHeightPx;
                 }
             }
         });
+        
+        console.log('Print page breaks calculation completed');
     }
     
-    // Set up print event listeners
-    window.addEventListener('beforeprint', handlePrintPageBreaks);
+    // Only run handlePrintPageBreaks for actual print events, not during drag operations
+    window.addEventListener('beforeprint', () => {
+        if (!document.body.classList.contains('dragging') && 
+            !document.body.classList.contains('dragging-section') &&
+            !document.body.classList.contains('disable-page-breaks')) {
+            handlePrintPageBreaks();
+        }
+    });
     
     // For browsers that don't support beforeprint
     if (window.matchMedia) {
         const mediaQueryList = window.matchMedia('print');
         mediaQueryList.addListener(function(mql) {
-            if (mql.matches) {
+            if (mql.matches && 
+                !document.body.classList.contains('dragging-section') && 
+                !document.body.classList.contains('dragging') &&
+                !document.body.classList.contains('disable-page-breaks')) {
                 handlePrintPageBreaks();
             }
         });
     }
+    
+    // Modify the drag event listeners to better handle page breaks
+    document.addEventListener('dragstart', (e) => {
+        // Disable page break calculations during any drag operations
+        document.body.classList.add('disable-page-breaks');
+    });
+    
+    document.addEventListener('dragend', (e) => {
+        // Re-enable page break calculations
+        setTimeout(() => {
+            document.body.classList.remove('disable-page-breaks');
+        }, 100);
+    });
+
+    // Add a style rule to prevent scrolling for placeholders
+    const style = document.createElement('style');
+    style.textContent = `
+    .section-placeholder.no-auto-scroll {
+        contain: style layout;
+        overflow: clip;
+    }
+    .prevent-scroll-jump {
+        overflow-anchor: none;
+    }
+    `;
+    document.head.appendChild(style);
 
     // Initialize the application
     loadState();
