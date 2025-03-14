@@ -2,6 +2,8 @@
 
 A printable daily planner designed specifically for kids with AuDHD (Autism and ADHD), featuring a customizable multi-column layout with drag-and-drop functionality for easy task organization.
 
+Try it now: [AuDHD Planner on GitHub Pages](https://olioskar.github.io/AuDHD-Planner/)
+
 ## Features
 
 - Flexible layout supporting both portrait and landscape printing
@@ -34,4 +36,17 @@ A printable daily planner designed specifically for kids with AuDHD (Autism and 
 - Chrome (recommended)
 - Firefox
 - Safari
-- Edge 
+- Edge
+
+## License
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the [LICENSE](LICENSE) file for details.
+
+This means you can:
+- Use and adapt this planner for personal or educational purposes
+- Share and modify the code
+- Must provide attribution to the original creator
+
+You cannot:
+- Use this project for commercial purposes
+- Sell or monetize this planner or its derivatives 
