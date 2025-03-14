@@ -42,11 +42,15 @@ Try it now: [AuDHD Planner on GitHub Pages](https://olioskar.github.io/AuDHD-Pla
 
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the [LICENSE](LICENSE) file for details.
 
-This means you can:
-- Use and adapt this planner for personal or educational purposes
-- Share and modify the code
-- Must provide attribution to the original creator
+This means you are free to:
+- Use and adapt this planner for personal, family, or educational purposes
+- Share the planner with others who might benefit from it
+- Modify and improve the code to better suit your needs
 
-You cannot:
-- Use this project for commercial purposes
-- Sell or monetize this planner or its derivatives 
+With the following requirements:
+- You must credit the original creator and link back to this project
+- You must indicate if you made changes to the original
+- You cannot use this project or any derivatives for commercial purposes
+- You cannot sell, monetize, or profit from this planner in any way
+
+The goal is to keep this resource freely available to help children and families while protecting the original work.
