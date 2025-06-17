@@ -362,52 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Item dragging setup
-    const draggableItems = document.querySelectorAll('.draggable-item');
-    const sortableLists = document.querySelectorAll('.sortable-list');
-
-    // Section dragging setup - completely separate
-    const draggableHeaders = document.querySelectorAll('.planner-section h2[draggable="true"]');
+    // Set up drag events for section containers
     const columns = document.querySelectorAll('.column');
-
-    // Ensure all non-text sections have remove buttons initially
-    document.querySelectorAll('.planner-section').forEach(section => {
-        if (!section.querySelector('textarea')) {  // If not a text section
-            const actions = section.querySelector('.section-actions');
-            if (actions && !actions.querySelector('.remove-section-button')) {
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-section-button';
-                removeBtn.title = 'Remove section';
-                removeBtn.textContent = '−';
-                removeBtn.addEventListener('click', () => removeSection(section));
-                actions.appendChild(removeBtn);
-            }
-        }
-    });
-
-    // Add drag event listeners to all draggable items
-    draggableItems.forEach(item => {
-        item.addEventListener('dragstart', handleItemDragStart);
-        item.addEventListener('dragend', handleItemDragEnd);
-        item.addEventListener('dragover', handleItemDragOver);
-        item.addEventListener('drop', handleItemDrop);
-    });
-
-    // Add drag event listeners to all sortable lists
-    sortableLists.forEach(list => {
-        list.addEventListener('dragover', handleItemDragOver);
-        list.addEventListener('drop', handleItemDrop);
-    });
-
-    // Add drag event listeners to all draggable section headers
-    draggableHeaders.forEach(header => {
-        header.addEventListener('dragstart', handleSectionDragStart);
-        header.addEventListener('dragend', handleSectionDragEnd);
-        header.addEventListener('dragover', handleSectionDragOver);
-        header.addEventListener('drop', handleSectionDrop);
-    });
-
-    // Add drag event listeners to all columns
     columns.forEach(column => {
         column.addEventListener('dragover', handleColumnDragOver);
         column.addEventListener('drop', handleColumnDrop);
@@ -1075,27 +1031,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Add double-click listeners to list items
-    document.querySelectorAll('.draggable-item').forEach(item => {
-        const textSpan = item.querySelector('span:not(.checkbox)');
-        if (textSpan) {
-            item.addEventListener('dblclick', (e) => {
-                // Only make editable if clicking the text span
-                if (e.target === textSpan) {
-                    // Prevent starting drag operation
-                    item.setAttribute('draggable', 'false');
-                    makeEditable(textSpan);
-                }
-            });
-            
-            // Restore draggable when editing ends
-            textSpan.addEventListener('blur', () => {
-                setTimeout(() => {
-                    item.setAttribute('draggable', 'true');
-                }, 0);
-            });
-        }
-    });
 
     // Add new section functionality
     document.querySelector('.add-section-button').addEventListener('click', (e) => {
@@ -1146,20 +1081,6 @@ document.addEventListener('DOMContentLoaded', () => {
         PlannerData.save();
     });
 
-    // Add event listeners to checkboxes
-    document.querySelectorAll('.checkbox').forEach(checkbox => {
-        checkbox.addEventListener('click', () => {
-            checkbox.classList.toggle('checked');
-            PlannerData.save();
-        });
-    });
-
-    // Add event listeners to writing spaces
-    document.querySelectorAll('.writing-space').forEach(textarea => {
-        textarea.addEventListener('input', () => {
-            PlannerData.save();
-        });
-    });
 
     // Handle print page breaks - Only run this right before printing
     function handlePrintPageBreaks() {
