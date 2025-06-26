@@ -351,6 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Export PlannerData to window for testing
+    window.PlannerData = PlannerData;
+
     // Function to remove a section
     function removeSection(section) {
         if (confirm('Are you sure you want to remove this section and all its items?')) {
