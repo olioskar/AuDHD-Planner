@@ -14,8 +14,9 @@ describe('PlannerData', () => {
   let document;
   let PlannerData;
   let localStorage;
+  let mockReload;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Load the actual HTML file
     const htmlPath = path.resolve(__dirname, '../index.html');
     const htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -24,28 +25,71 @@ describe('PlannerData', () => {
     dom = new JSDOM(htmlContent, {
       url: 'http://localhost',
       pretendToBeVisual: true,
-      resources: 'usable'
+      resources: 'usable',
+      runScripts: 'outside-only'
     });
+    
+    // Suppress console errors for CSS loading failures
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      if (args[0] && args[0].toString().includes('Could not load link')) {
+        return; // Suppress CSS loading errors
+      }
+      originalConsoleError.apply(console, args);
+    };
     
     window = dom.window;
     document = window.document;
     global.window = window;
     global.document = document;
     
-    // Create a proper localStorage mock
-    localStorage = {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-      clear: jest.fn(),
+    // Create a working localStorage mock using spies
+    const localStorageStore = {};
+    const localStorageMock = {
+      getItem: jest.fn((key) => localStorageStore[key] || null),
+      setItem: jest.fn((key, value) => {
+        localStorageStore[key] = value;
+      }),
+      removeItem: jest.fn((key) => {
+        delete localStorageStore[key];
+      }),
+      clear: jest.fn(() => {
+        Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
+      }),
+      _store: localStorageStore // For debugging
     };
-    global.localStorage = localStorage;
-    window.localStorage = localStorage;
     
-    // Mock other window properties
+    // Replace localStorage completely
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      writable: true
+    });
+    global.localStorage = localStorageMock;
+    localStorage = localStorageMock;
+    
+    // Mock other window properties that are needed
     window.scrollTo = jest.fn();
     window.confirm = jest.fn(() => true);
     window.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 0));
+    window.scrollY = 0;
+    
+    // Mock window.location.reload to prevent JSDOM navigation errors
+    mockReload = jest.fn();
+    try {
+      delete window.location.reload;
+      window.location.reload = mockReload;
+    } catch (e) {
+      // If it's not configurable, we need to replace the whole location object
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...window.location,
+          reload: mockReload
+        },
+        writable: true,
+        configurable: true
+      });
+    }
+    
     window.matchMedia = jest.fn().mockImplementation(query => ({
       matches: false,
       media: query,
@@ -73,25 +117,45 @@ describe('PlannerData', () => {
     const scriptPath = path.resolve(__dirname, '../script.js');
     const scriptContent = fs.readFileSync(scriptPath, 'utf8');
     
-    // Execute the script in the window context
-    const script = new window.Function(scriptContent);
-    script.call(window);
+    // Execute script in window context, but replace window.location.reload calls with our mock
+    // First, set our mock on the window object
+    dom.window.mockReload = mockReload;
     
-    // Trigger DOMContentLoaded to initialize the script
-    const event = new window.Event('DOMContentLoaded');
-    window.document.dispatchEvent(event);
+    // Replace the actual function call in the script content
+    const modifiedScriptContent = scriptContent.replace(
+      'window.location.reload();',
+      'window.mockReload();'
+    );
+    
+    const scriptWrapper = `
+      (function() {
+        ${modifiedScriptContent}
+      })();
+    `;
+    
+    // Execute modified script
+    dom.window.eval(scriptWrapper);
+    
+    // Wait for any async operations and then trigger DOMContentLoaded
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    // Trigger DOMContentLoaded event
+    const domContentLoadedEvent = new window.Event('DOMContentLoaded', {
+      bubbles: true,
+      cancelable: false
+    });
+    window.document.dispatchEvent(domContentLoadedEvent);
+    
+    // Wait a bit more for the event handlers to be set up
+    await new Promise(resolve => setTimeout(resolve, 10));
     
     // Get the PlannerData object from window
-    console.log('window.PlannerData:', window.PlannerData);
-    console.log('window keys:', Object.keys(window));
-    // Manual assignment for testing purposes
     PlannerData = window.PlannerData;
+    
+    // If PlannerData is still not available, throw a descriptive error
     if (!PlannerData) {
-      const scriptData = Object.values(window).find(v => typeof v === 'object' && v && v.save && typeof v.save === 'function');
-      // Assuming scriptData is PlannerData if it has save method
-      PlannerData = scriptData || null;
+      throw new Error('PlannerData object not found on window. Available keys: ' + Object.keys(window).filter(k => !k.startsWith('on')).join(', '));
     }
-    console.log('Attempted PlannerData:', PlannerData);
   });
   
   afterEach(() => {
@@ -135,14 +199,19 @@ describe('PlannerData', () => {
   }
 
   describe('getCurrentState()', () => {
-    test('should return empty state when no sections exist', () => {
+    test('should return state with default sections from HTML', () => {
       const state = PlannerData.getCurrentState();
       
-      expect(state).toEqual({
-        sections: {},
-        columnsOrder: [[], [], []],
-        orientation: 'landscape'
-      });
+      // The HTML file contains default sections, so we expect them to be present
+      expect(state.sections).toHaveProperty('morning');
+      expect(state.sections).toHaveProperty('homework');
+      expect(state.sections).toHaveProperty('happy-moment');
+      expect(state.sections['morning'].title).toBe('🕰️ Morning Routine');
+      expect(state.sections['homework'].title).toBe('📖 Homework & Chores');
+      expect(state.sections['happy-moment'].title).toBe('❤️ Happy Moment');
+      expect(state.sections['happy-moment'].isTextSection).toBe(true);
+      expect(state.orientation).toBe('landscape');
+      expect(state.columnsOrder).toHaveLength(3);
     });
 
     test('should capture section data correctly', () => {
@@ -208,6 +277,14 @@ describe('PlannerData', () => {
   });
 
   describe('save() and load()', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+      localStorage.setItem.mockClear();
+      localStorage.getItem.mockClear();
+      localStorage.removeItem.mockClear();
+    });
+    
     test('should save state to localStorage', () => {
       const column = document.querySelector('.column');
       const section = createMockSection('test-section', 'Test Section');
@@ -245,8 +322,10 @@ describe('PlannerData', () => {
     });
 
     test('should return null when no saved state exists', () => {
+      // Clear localStorage completely and ensure getItem returns null
+      localStorage.clear();
       localStorage.getItem.mockReturnValue(null);
-
+      
       const loadedState = PlannerData.load();
 
       expect(loadedState).toBeNull();
@@ -374,18 +453,17 @@ describe('PlannerData', () => {
 
   describe('reset()', () => {
     test('should clear localStorage and reload page', () => {
-      // Mock window.location.reload by modifying the existing location object
-      const originalReload = window.location.reload;
-      const mockReload = jest.fn();
+      // Clear mock call counts first
+      localStorage.removeItem.mockClear();
+      mockReload.mockClear();
+      
+      // Ensure the mock is still properly applied to the window object right before the test
       window.location.reload = mockReload;
-
+      
       PlannerData.reset();
 
       expect(localStorage.removeItem).toHaveBeenCalledWith('plannerData');
       expect(mockReload).toHaveBeenCalled();
-      
-      // Restore original reload
-      window.location.reload = originalReload;
     });
   });
 });
