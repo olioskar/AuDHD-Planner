@@ -29,7 +29,20 @@ export interface SectionData {
 }
 
 /**
- * Planner state structure
+ * Planner data structure
+ */
+export interface PlannerData {
+  id?: string;
+  sections?: SectionData[];
+  columnsOrder?: string[][];
+  orientation?: 'portrait' | 'landscape';
+  version?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+/**
+ * Planner state structure (for storage/serialization)
  */
 export interface PlannerState {
   sections: Record<string, SectionData>;
