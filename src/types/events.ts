@@ -30,15 +30,27 @@ export interface EventMap {
   'state:loaded': { state: PlannerState };
   'state:saved': { state: PlannerState };
   'state:reset': Record<string, never>;
+  'state:undo': { state: PlannerState };
+  'state:redo': { state: PlannerState };
+  'state:error': { error: string };
 
   // Drag events
-  'drag:start': { type: 'section' | 'item'; id: string };
-  'drag:end': { type: 'section' | 'item'; id: string };
-  'drag:over': { type: 'section' | 'item'; id: string; targetId: string };
+  'drag:start': { type: 'section' | 'item'; draggedId: string; sourceContainerId: string };
+  'drag:move': { type: 'section' | 'item'; draggedId: string; sourceContainerId: string; targetContainerId: string; position?: number };
+  'drag:end': { type: 'section' | 'item'; draggedId: string; sourceContainerId: string; targetContainerId: string; position?: number };
+  'drag:cancel': { type: 'section' | 'item'; draggedId: string; sourceContainerId: string };
+
+  // Drop events
+  'item:dropped': { itemId: string; sourceSectionId: string; targetSectionId: string; position?: number };
+  'section:dropped': { sectionId: string; sourceColumnId: string; targetColumnId: string; position?: number };
+
+  // Print events
+  'print:start': { options: Record<string, unknown> };
+  'print:complete': { options: Record<string, unknown> };
+  'print:error': { error: string };
 
   // UI events
   'orientation:changed': { orientation: 'portrait' | 'landscape' };
-  'print:requested': Record<string, never>;
 
   // Error events
   'error:occurred': { error: Error; context: string };
