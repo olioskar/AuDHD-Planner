@@ -4,7 +4,7 @@
  */
 
 import type { EventBus } from '@core/EventBus';
-import type { DragState } from '@types/models';
+import type { DragState } from '@/types/models';
 
 /**
  * Drag operation type
@@ -70,7 +70,6 @@ export class DragService {
   private targetContainerId: string | null = null;
   private targetPosition: number | null = null;
   private scrollInterval: number | null = null;
-  private dragStartTimestamp = 0;
 
   /**
    * Create a new DragService
@@ -106,7 +105,6 @@ export class DragService {
 
     this.targetContainerId = sourceContainerId;
     this.targetPosition = null;
-    this.dragStartTimestamp = Date.now();
 
     // Emit drag start event
     this.eventBus.emit('drag:start', {
@@ -159,7 +157,6 @@ export class DragService {
     }
 
     const { type, draggedId, sourceContainerId } = this.currentDrag;
-    const duration = Date.now() - this.dragStartTimestamp;
 
     if (!type || !draggedId || !sourceContainerId) {
       this.cancelDrag();

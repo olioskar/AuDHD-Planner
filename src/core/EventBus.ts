@@ -10,7 +10,7 @@ import type {
   EventListener,
   EventSubscriptionOptions,
   EventHistoryEntry,
-} from '@types/events';
+} from '@/types/events';
 
 export class EventBus {
   private listeners = new Map<EventType, EventListener<EventType>[]>();

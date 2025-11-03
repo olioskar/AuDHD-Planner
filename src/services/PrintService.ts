@@ -83,7 +83,7 @@ export class PrintService {
 
     try {
       // Emit print start event
-      this.eventBus.emit('print:start', { options });
+      this.eventBus.emit('print:start', { options: options as any });
 
       // Apply print-specific styles
       this.applyPrintStyles(orientation);
@@ -105,7 +105,7 @@ export class PrintService {
       }
 
       // Emit print complete event
-      this.eventBus.emit('print:complete', { options });
+      this.eventBus.emit('print:complete', { options: options as any });
     } catch (error) {
       this.eventBus.emit('print:error', {
         error: error instanceof Error ? error.message : 'Print failed',
@@ -313,7 +313,7 @@ export class PrintService {
   getPageHeight(orientation: PageOrientation): number {
     const a4 = config.page.sizes.a4[orientation];
     // Convert mm to pixels (assuming 96 DPI)
-    return config.page.mmToPx(a4.height);
+    return a4.height * config.page.mmToPx;
   }
 
   /**
@@ -325,7 +325,7 @@ export class PrintService {
   getPageWidth(orientation: PageOrientation): number {
     const a4 = config.page.sizes.a4[orientation];
     // Convert mm to pixels (assuming 96 DPI)
-    return config.page.mmToPx(a4.width);
+    return a4.width * config.page.mmToPx;
   }
 
   /**

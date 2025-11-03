@@ -3,7 +3,7 @@
  * Includes section management, column organization, and state persistence
  */
 
-import type { PlannerData, PlannerState, SectionData, ValidationResult } from '@types/models';
+import type { PlannerData, PlannerState, SectionData, ValidationResult } from '@/types/models';
 import { Section } from './Section';
 
 /**

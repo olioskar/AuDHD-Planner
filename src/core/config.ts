@@ -3,7 +3,7 @@
  * Centralized configuration for all app settings
  */
 
-import type { AppConfig } from '@types/config';
+import type { AppConfig } from '@/types/config';
 
 /**
  * Main application configuration
@@ -91,7 +91,7 @@ export const getConfig = (): Readonly<AppConfig> => {
 export const isFeatureEnabled = (
   featureName: keyof AppConfig['features']
 ): boolean => {
-  return config.features[featureName];
+  return Boolean(config.features[featureName]);
 };
 
 /**

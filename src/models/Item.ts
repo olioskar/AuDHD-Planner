@@ -3,7 +3,7 @@
  * Includes validation, business logic, and serialization
  */
 
-import type { ItemData, ValidationResult } from '@types/models';
+import type { ItemData, ValidationResult } from '@/types/models';
 
 /**
  * Validation constraints for Item

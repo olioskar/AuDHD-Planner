@@ -5,7 +5,7 @@
 
 import type { EventBus } from '@core/EventBus';
 import type { Planner } from '@models/Planner';
-import type { PlannerState } from '@types/models';
+import type { PlannerState } from '@/types/models';
 import type { IStorageAdapter } from './storage/IStorageAdapter';
 import { Planner as PlannerModel } from '@models/Planner';
 

@@ -3,7 +3,7 @@
  * Shared validation logic used across models
  */
 
-import type { ValidationResult } from '@types/models';
+import type { ValidationResult } from '@/types/models';
 
 /**
  * Validation error class for better error handling

@@ -3,7 +3,7 @@
  * Includes item management, validation, and serialization
  */
 
-import type { SectionData, ItemData, ValidationResult } from '@types/models';
+import type { SectionData, ItemData, ValidationResult } from '@/types/models';
 import { Item } from './Item';
 
 /**
@@ -234,7 +234,8 @@ export class Section {
    * @returns The Item, or undefined if not found
    */
   getItem(itemId: string): Item | undefined {
-    return this.items.find((item) => item.id === itemId);
+    const found = this.items.find((item) => item.id === itemId) ?? null;
+    return found ?? null;
   }
 
   /**

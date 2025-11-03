@@ -4,7 +4,7 @@
  */
 
 import type { EventBus } from './EventBus';
-import type { EventType, EventCallback, EventSubscriptionOptions } from '@types/events';
+import type { EventType, EventCallback, EventSubscriptionOptions } from '@/types/events';
 
 /**
  * HTML element attributes type
@@ -27,7 +27,7 @@ export type ComponentState = Record<string, unknown>;
  *   }
  * }
  */
-export abstract class Component<TState extends ComponentState = ComponentState> {
+export abstract class Component<TState = Record<string, unknown>> {
   protected eventBus: EventBus;
   protected element: HTMLElement | null = null;
   protected listeners: Array<() => void> = [];
@@ -187,6 +187,14 @@ export abstract class Component<TState extends ComponentState = ComponentState> 
 
     // Re-mount
     this.onMount();
+  }
+
+  /**
+   * Re-render the component (alias for update)
+   * Preserves position in DOM
+   */
+  protected rerender(): void {
+    this.update();
   }
 
   /**
